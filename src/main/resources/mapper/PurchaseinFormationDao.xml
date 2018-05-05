@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.PurchaseinFormationDao">
+
+
+	<insert id="savePurchaseinFormation" parameterType="java.util.Map">
+		INSERT INTO purchaseinformation
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="pname !=null">pname,</if>
+			<if test="pcontact !=null">pcontact,</if>
+			<if test="pidentity !=null">pidentity,</if>
+			<if test="pbfdata !=null">pbfdata,</if>
+			<if test="psjxh !=null">psjxh,</if>
+			<if test="pmoney !=null">pmoney,</if>
+			<if test="premark !=null">premark,</if>
+			<if test="ptjrname!=null">ptjrname,</if>
+			<if test="ptjrcontact !=null">ptjrcontact,</if>
+			<if test="ptjridentity !=null">ptjridentity,</if>
+			<if test="prepared !=null">prepared,</if>
+			<if test="pauditor !=null">pauditor,</if>
+			<if test="paudittime !=null">paudittime,</if>
+			<if test="pyyid !=null">pyyid,</if>
+			<if test="shopid !=null">shopid,</if>
+			
+			
+			
+			
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="pname !=null">#{pname},</if>
+			<if test="pcontact !=null">#{pcontact},</if>
+			<if test="pidentity !=null">#{pidentity},</if>
+			<if test="pbfdata !=null">#{pbfdata},</if>
+			<if test="psjxh !=null">#{psjxh},</if>
+			<if test="pmoney !=null">#{pmoney},</if>
+			<if test="premark !=null">#{premark},</if>
+			<if test="ptjrname!=null">#{ptjrname},</if>
+			<if test="ptjrcontact !=null">#{ptjrcontact},</if>
+			<if test="ptjridentity !=null">#{ptjridentity},</if>
+			<if test="prepared !=null">#{prepared},</if>
+			<if test="pauditor !=null">#{pauditor},</if>
+			<if test="paudittime !=null">#{paudittime},</if>
+			<if test="pyyid!=null">#{pyyid},</if>
+			<if test="shopid!=null">#{shopid},</if>
+		</trim>
+		
+		;update vehicleorders set status=2
+		 where id=#{pyyid}
+	</insert>
+	
+	
+	
+	
+	<update id="updateVehicleorders1" >
+	
+		update vehicleorders set status=4
+		 where id=#{0}
+	
+	</update>
+	
+	
+	<select id="queryPurchaseinFormationBypname" resultType="java.util.Map">
+	select  *  from  purchaseinformation 
+		<trim prefix="where" prefixOverrides="and|or">
+			<if test="params !=null">
+				or pname like  '%${params}%'
+			</if>
+			<if test="params !=null">
+				or pcontact like  '%${params}%'
+			</if>
+		</trim>
+	</select>
+	
+	
+	
+	
+	
+	<select id="queryPurchaseinFormationBypstatus" resultType="java.util.Map">
+	SELECT  *  FROM  purchaseinformation AS p JOIN vehiclebanner v
+		ON p.psjxh=v.carName 
+		JOIN vehbannerpic AS u
+		ON v.vehId=u.vehId
+		WHERE 
+			p.pstatus=#{status}	
+		 AND  
+		 	u.isShow=1 
+		 AND 
+		 	v.shopId=#{shopid}
+		 ORDER BY  p.pbfdata DESC
+		 LIMIT #{start},#{limit}	
+	</select>
+	
+	
+	<select id="getCount" resultType="java.lang.Integer"  >
+		SELECT  COUNT(1) FROM  purchaseinformation AS p JOIN vehiclebanner v
+		ON p.psjxh=v.carName 
+		JOIN vehbannerpic AS u
+		ON v.vehId=u.vehId
+		WHERE 
+			p.pstatus=#{status}	
+		AND  	
+			u.isShow=1
+	    AND 
+	    	v.shopId=#{shopid}
+	</select>
+	
+	
+	
+
+	<update id="updatePurchaseinFormation" >
+	
+	UPDATE  purchaseinformation 
+		SET pauditor=#{pauditor} ,
+		paudittime=SYSDATE(),
+		previewthenote=#{previewthenote} ,
+		pstatus=#{pstatus}
+	WHERE pid=#{pid}
+	
+	</update>
+
+
+	<update id="updatePurchaseinFormationbyall" >
+	
+	UPDATE  purchaseinformation 
+		SET psjxh=#{psjxh} ,
+		pmoney=#{pmoney} ,
+		premark=#{premark},
+		pstatus=0,
+		previewthenote=''
+		WHERE pid=#{pid}
+	
+	</update>
+	
+	<select id="querySHOP" resultType="int">
+	
+		SELECT classify FROM  SHOP
+		WHERE ShopId=#{shopid}
+	
+	</select>
+	
+	
+	<!-- 根据店铺查询4s点的新车 -->
+	<select id="queryVehiclemain" resultType="java.util.Map">
+		
+		
+		SELECT typeId,carName,gearbox,carType,CarEngine  FROM  vehiclemain
+		WHERE  shopId=#{shopid}
+	
+	
+	
+	
+	</select>
+	
+	
+		<!-- 根据店铺查询二手车 -->
+	<select id="queryVsedvehicledet" resultType="java.util.Map">
+		
+		
+		
+		SELECT  oldId,carName,carDetName,gearbox,carType,CarEngine  FROM  usedvehicledet
+		WHERE  shopId=#{shopid}
+	
+	
+	
+	</select>
+	
+	
+	
+	<select id="querybyViewerNameorViewerPhone" resultType="java.util.Map">
+		
+		SELECT  *  FROM vehicleorders AS v
+		LEFT JOIN 
+			customer AS c
+		
+		ON 
+		v.cusid=c.cusid
+	  	
+	  	WHERE 
+	  		 v.viewerName  like '%${viewer}%'
+	 	 OR
+			v.viewerPhone like '%${viewer}%'
+	  	 AND
+			v.uid=#{uid}
+	    AND 
+		    v.status=1
+	 	LIMIT #{start},#{limit}
+			
+			
+	</select>
+	
+	
+	<select id="count" resultType="java.lang.Integer"  >
+		SELECT  COUNT(1)  FROM vehicleorders
+	   	WHERE 
+			
+	  		 viewerName  like '%${viewer}%'
+	 	 OR
+			viewerPhone like '%${viewer}%'
+	  	 AND
+			uid=#{uid}
+	   	 AND 
+		    STATUS=1
+	</select>
+
+	<select id="queryuserid" resultType="int">
+		SELECT  userid  FROM  sys_token
+		WHERE token=#{token}
+	
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="queryPurchaseinFormationBypstatus1" resultType="java.util.Map">
+	SELECT  *  FROM  purchaseinformation AS p JOIN vehiclebanner v
+		ON p.psjxh=v.carName 
+		JOIN vehbannerpic AS u
+		ON v.vehId=u.vehId
+		WHERE 
+			p.pstatus=#{status}	
+		 AND  
+		 	u.isShow=1 
+		 AND 
+		 	v.shopId=#{shopid}
+		 AND 
+		 	p.prepared=#{prepared}
+		 ORDER BY  p.pbfdata DESC
+		 LIMIT #{start},#{limit}	
+	</select>
+	
+	
+	<select id="getCount1" resultType="java.lang.Integer"  >
+		SELECT  COUNT(1) FROM  purchaseinformation AS p JOIN vehiclebanner v
+		ON p.psjxh=v.carName 
+		JOIN vehbannerpic AS u
+		ON v.vehId=u.vehId
+		WHERE 
+			p.pstatus=#{status}	
+		AND  	
+			u.isShow=1
+	    AND 
+	    	v.shopId=#{shopid}
+	     AND 
+		 	p.prepared=#{prepared}
+	    
+	</select>
+	
+	
+</mapper>

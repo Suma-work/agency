@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.UsedVehicleSellsDao">
+    <insert id="saveUsedVehicleMessage" parameterType = "com.sumainfo.common.entity.UsedVehicleSells" 
+            useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO usedVehicleSells
+		(tradeArea,
+		 vehicleType,
+		 licenseTime,
+		 range,
+		 sellPrice,
+		 status,
+		 contacter,
+		 contactPhone,
+		 detailsIntroduction,
+		 createTime) 
+		VALUES 
+		(#{tradeArea},
+		 #{vehicleType},
+		 #{licenseTime},
+		 #{range},
+		 #{sellPrice},
+		 #{status},
+		 #{contacter},
+		 #{contactPhone},
+		 #{detailsIntroduction},
+		 #{createTime})
+	</insert>
+	
+	 <insert id="savePictureList" parameterType="ArrayList">  
+	    INSERT INTO pictureSave (classify,associationId,picAddress,createTime)  
+	    VALUES  
+	    <foreach collection="list" item="item" index="index" separator=",">  
+	            (#{item.classify}, #{item.associationId},#{item.picAddress},#{item.createTime})  
+	    </foreach> 
+   </insert> 
+   <delete id="deleteUsedVehicleMessage">
+   DELETE FROM usedVehicleSells WHERE id = #{num}
+   </delete>
+</mapper>

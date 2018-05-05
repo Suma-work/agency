@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.CommercialTenantVisitorMsDao">
+
+<select id="getNotAgreeOrder" resultType="com.sumainfo.common.entity.OrderMs">
+select 
+id,
+createTime,
+orderDate,
+orderTime,
+viewerName,
+viewerPhone 
+from 
+vehicleorders 
+where status = #{status}
+and
+uid = ${uid}
+and 
+viewerName like '%#{param}%'
+or 
+viewerPhone like '%#{param}%'
+</select>
+
+<select id="getNotOrder" resultType="com.sumainfo.common.entity.OrderMs">
+select 
+id,
+createTime,
+orderDate,
+orderTime,
+viewerName,
+viewerPhone 
+from 
+vehicleorders 
+where status = #{status}
+and
+uid = ${uid}
+</select>
+
+<select id="getCheckOrder" resultType="com.sumainfo.common.entity.OrderMs">
+select 
+id,
+status,
+createTime,
+orderDate,
+orderTime,
+viewerName,
+viewerPhone 
+from 
+vehicleorders 
+where status != #{status}
+and
+uid = ${uid}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') = #{orderDate} ]]>
+limit #{minPage},#{maxPage}
+</select>
+
+<select id="getCheckOrderNum" resultType="java.lang.Integer">
+select 
+count(*) as counts
+from 
+vehicleorders 
+where status != #{status}
+and
+uid = ${uid}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') = #{orderDate} ]]>
+</select>
+
+<select id="getSkipDetOrder" resultType="com.sumainfo.common.entity.OrderSkipDetMs">
+select 
+a.id,
+a.viewerName,
+a.viewerPhone,
+a.orderDate,
+a.identityCard,
+a.carName,
+b.realName,
+b.cellPhone,
+b.idNumber
+from 
+vehicleorders a
+left join customer b on a.cusId = b.cusId
+where status = 1
+and
+id = ${id}
+</select>
+
+<select id="getDetOrder" resultType="com.sumainfo.common.entity.OrderDetMs">
+select 
+a.id,
+a.viewerName,
+a.viewerPhone,
+a.identityCard,
+a.orderDate,
+a.orderTime,
+c.uname,
+c.mobile,
+c.user_id,
+a.carName,
+b.realName,
+b.cellPhone,
+b.idNumber
+from 
+vehicleorders a
+left join customer b on a.cusId = b.cusId
+left join sys_user c on a.uid = c.user_id
+where a.status = 1
+and
+a.id = ${id}
+</select>
+
+<select id="getCheckMs" resultType="java.lang.String">
+select moTime from smsreturn 
+where mobile = #{mobile} and messageContent is not null
+</select>
+
+<update id="updateOrderStatus">
+update vehicleorders
+set status = #{status}
+where id = ${id}
+</update>
+
+<select id="getComUserMs" resultType="java.util.Map">
+select user_id,uname,mobile from sys_user 
+where status = 1 and shopid = #{shopid}
+</select>
+
+<update id="updateOrderMs">
+update vehicleorders
+set orderDate = #{orderDate},
+    orderTime = #{orderTime},
+    uid = ${uid}
+where id = ${id}    
+</update>
+</mapper>

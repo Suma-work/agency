@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+	<mapper namespace="com.sumainfo.agency.dao.Complainreplydao">
+	
+		<insert id="saveComplainreply" parameterType="java.util.Map" >
+			INSERT INTO complainreply 
+			<trim prefix="(" suffix=")" suffixOverrides=",">
+				<if test="classify !=null">classify,</if>
+				<if test="parentId !=null">parentId,</if>
+				<if test="comtent !=null">comtent,</if>
+				<if test="creatorId !=null">creatorId,</if>
+				<if test="createTime !=null">createTime,</if>
+				<if test="pic1 !=null">pic1,</if>
+				<if test="pic2 !=null">pic2,</if>
+				<if test="pic3 !=null">pic3,</if>
+				
+			</trim>
+			<trim prefix="values(" suffix=")" suffixOverrides=",">
+				<if test="classify !=null">#{classify},</if>
+				<if test="parentId !=null">#{parentId},</if>
+				<if test="comtent !=null">#{comtent},</if>
+				<if test="creatorId !=null">#{creatorId},</if>
+				<if test="createTime !=null">#{createTime},</if>
+				<if test="pic1 !=null">#{pic1},</if>
+				<if test="pic2 !=null">#{pic2},</if>
+				<if test="pic3 !=null">#{pic3},</if>
+				
+			
+			</trim>
+			
+			;UPDATE complaintable SET dealSchedule=2
+			WHERE id=#{parentId}
+			
+		</insert>
+	
+	
+		<select id="queryComplaintablebydealScheduleAndshopId" resultType="java.util.Map">
+		SELECT  c.id,c.cusId,c.cusName,c.shopId,c.complaintType,c.happenedTime,
+		c. dealSchedule,c.overTime,c.reasons,c.isRecept,c.createTime,t.cellPhone
+		FROM complaintable AS c LEFT JOIN customer AS t ON  c.cusId=t.cusId
+			<trim prefix="where" prefixOverrides="and|or">
+				<if test="shopid !=null">
+					and c.shopId=#{shopid}
+				</if>
+			</trim>
+				and c.dealSchedule &lt;=2 
+				ORDER BY  c.createTime DESC 
+				LIMIT #{start},#{limit}
+		</select>
+		<select id="queryxiangbiao"  resultType="java.util.Map">
+			SELECT  picAddress  FROM  picturesave
+			<trim prefix="where" prefixOverrides="and|or">
+				<if test="associationId !=null">
+					and associationId=#{associationId}
+				</if>
+			</trim>
+		</select>
+		
+		<select id="queryComplaintableCount" resultType="int">
+		
+			SELECT  count(1)  FROM  complaintable
+			WHERE  shopId=#{shopid} AND  dealSchedule &lt;=2
+			
+		
+		</select>
+		
+		
+		
+		<select id="queryComplaintablebydealScheduleAndshopId1" resultType="java.util.Map">
+		
+		SELECT  c.id,c.cusId,c.cusName,c.shopId,c.complaintType,c.happenedTime,
+		c. dealSchedule,c.overTime,c.reasons,c.isRecept,c.createTime,t.cellPhone
+		FROM complaintable AS c LEFT JOIN customer AS t ON  c.cusId=t.cusId
+			<trim prefix="where" prefixOverrides="and|or">
+				<if test="shopid !=null">
+					and c.shopId=#{shopid}
+				</if>
+			</trim>
+				and c.dealSchedule =3
+				ORDER BY  c.createTime DESC 
+				LIMIT #{start},#{limit}
+		
+		</select>
+		
+		
+		<select id="queryComplaintableCount1" resultType="int">
+		
+			SELECT  count(1)  FROM  complaintable
+			WHERE  shopId=#{shopid} AND  dealSchedule =3
+			
+		
+		</select>
+		
+		
+		<select id="queryCmplainreplybyparentId" resultType="java.util.Map">
+		
+			SELECT  *  FROM complainreply
+			WHERE parentId=#{parentid}
+		
+		
+		</select>
+		
+		
+		<select id="queryShopcommentByShopIdAndStatus" resultType="java.util.Map">
+		
+				SELECT  s.Id,s.cusId,s.cusName,c.cellPhone,s.environmentRate,s.serviceRate,
+				s.skillRate,s.skillRate,s.comment,s.createTime,s.shopId,s.classify,
+				s.img1,s.img2,s.img3,s.img4,s.img5,s.delfg,s.status
+				 FROM shopcomment AS s JOIN customer AS c ON s.cusId=c.cusId
+				 WHERE s.shopId=#{shopid}
+				 AND s.status=#{status}
+				 ORDER BY  s.createTime DESC 
+				LIMIT #{start},#{limit}
+		
+		</select>
+		
+		<select id="countShopcomment" resultType="int">
+		
+				SELECT count(1)
+				 FROM shopcomment AS s JOIN customer AS c ON s.cusId=c.cusId
+				 WHERE s.shopId=#{shopid}
+				 AND s.status=#{status}
+		</select>
+		<insert id="saveShop_reply" parameterType="java.util.Map"  >
+			INSERT INTO shop_reply 
+			<trim prefix="(" suffix=")" suffixOverrides=",">
+				<if test="shopid !=null">shopid,</if>
+				<if test="comid !=null">comid,</if>
+				<if test="comment !=null">comment,</if>
+				<if test="createTime !=null">createTime,</if>
+			</trim>
+			<trim prefix="values(" suffix=")" suffixOverrides=",">
+				<if test="shopid !=null">#{shopid},</if>
+				<if test="comid !=null">#{comid},</if>
+				<if test="comment !=null">#{comment},</if>
+				<if test="createTime !=null">#{createTime},</if>
+				
+			
+			</trim>
+			
+			;UPDATE shopcomment SET status=1
+			WHERE id=#{comid}
+			
+		</insert>
+		
+		
+		
+		<select id="queryShop_replyBycomid" resultType="java.util.Map">
+			SELECT *  FROM  shop_reply
+			WHERE comid=#{comid}
+		</select>
+	</mapper>

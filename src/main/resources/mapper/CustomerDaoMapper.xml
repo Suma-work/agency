@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.CustomerDao">
+
+<!--保存客户信息 -->
+<insert id="saveOrUpdate" keyProperty="cusId" parameterType="com.sumainfo.common.entity.Customer" useGeneratedKeys="true">
+    <!-- 查看是否存在cellPhone,如果存在及更新，否则插入 -->
+    <selectKey keyProperty="count" order="BEFORE" resultType="int">  
+        select count(*) as count from customer where cellPhone = #{cellPhone}
+    </selectKey>        
+    <!-- 如果大于0则更新 -->  
+    <if test="count>0">  
+        update customer set
+        nickName = #{nickName},
+        passWord = #{passWord},  
+        cellPhone = #{cellPhone},
+        modifyTime = #{modifyTime},
+        createTime = #{createTime}
+        where cellPhone = #{cellPhone}
+    </if>
+    <!-- 如果等于0则保存 -->  
+    <if test="count==0">
+        insert into customer(
+        nickName,
+        passWord,
+        cellPhone,
+        modifyTime,
+        createTime)
+        values
+        (
+        #{nickName},
+        #{passWord},
+        #{cellPhone},
+        #{modifyTime},
+        #{createTime})
+    </if>
+</insert>
+
+<!-- 查询客户信息  -->
+<select id="loginAccount" parameterType="java.lang.String" resultType="com.sumainfo.common.entity.Customer">
+select  cusId,
+        nickName,
+        realName,
+        idNumber,
+        passWord,
+        cellPhone,
+        modifyTime,
+        createTime
+from customer
+where cellPhone = #{cellPhone}       
+</select>
+
+<!-- 查询客户状态 -->
+<select id="findStatusNum" resultType="java.lang.Integer">
+SELECT COUNT(*) FROM customer where cellPhone = #{cellPhone} AND status = #{status}
+</select>
+
+<!-- 修改密码 -->
+<update id="updateCustomer">
+  UPDATE customer SET 
+  passWord = #{passWord}
+  where cellPhone = #{cellPhone}
+</update>
+
+<select id="findCusById" parameterType="java.lang.Integer" resultType="java.lang.String">
+	select  
+	      cellPhone
+	from  customer
+	where cusId = ${cusId} 
+</select> 
+
+<select id="selectNameById" resultType="java.lang.String">
+    select  
+	      nickName
+	from  customer
+	where cusId = ${cusId} 
+</select>
+
+<!--更换图像  -->
+<update id="savaCusPic">
+  UPDATE customer SET 
+  portait = #{portait}
+  where cusId = #{cusId}
+</update>
+
+<!-- 退出登录 -->
+<delete id="logoutAccount">
+DELETE FROM token WHERE tokenMsg = #{tokenMsg}
+</delete>
+
+<!-- 实名认证 -->
+<update id="certificationMessage">
+  UPDATE customer SET 
+  realName = #{realName},
+  idNumber = #{idNumber}
+  where cusId = #{cusId}
+</update>
+
+<!-- 修改昵称 -->
+<update id="modifyNikeName">
+  UPDATE customer SET 
+  nickName = #{nickName}
+  where cusId = #{cusId}
+</update>
+
+<!-- 修改手机号 -->
+<update id="modifyPhone">
+  UPDATE customer SET 
+  cellPhone = #{cellPhone}
+  where cusId = #{cusId}
+</update>
+
+<!-- 查询自己车的条数 -->
+<select id="findMyCarNum" resultType="java.lang.Integer">
+    select  
+	      COUNT(*) AS counts
+	from  mycar
+	where cusId = ${cusId} 
+</select>
+
+<!-- 保存自己的爱车信息 -->
+<insert id="saveMyCar" parameterType="com.sumainfo.common.entity.MyCar">
+     insert into mycar(
+        cusId,
+        picAdress,
+        carTypeName,
+        carNo,
+        createTime,
+        isDefault,
+        recognitionNo,
+        carEngineNo)
+        values
+        (
+        #{cusId},
+        #{picAdress},
+        #{carTypeName},
+        #{carNo},
+        #{createTime},
+        #{isDefault},
+        #{recognitionNo},
+        #{carEngineNo})
+</insert>
+
+<update id="updateMyCar" parameterType="com.sumainfo.common.entity.MyCar">
+     UPDATE mycar SET
+        picAdress = #{picAdress},
+        carTypeName = #{carTypeName},  
+        carNo = #{carNo},
+        recognitionNo = #{recognitionNo},
+        carEngineNo = #{carEngineNo}
+     WHERE id = #{id}
+</update>
+<select id="judgeByCarNo" resultType="java.lang.Integer">
+select count(*) as counts from mycar where carNo = #{carNo}
+</select>
+<!-- 查询自己爱车信息 -->
+<select id="findMyCarList" resultType="java.util.Map">
+    select
+        id,  
+	    picAdress,
+        carTypeName,
+        carNo,
+        isDefault,
+        recognitionNo,
+        carEngineNo
+	from  mycar
+	where cusId = ${cusId} 
+	group by createTime desc
+	Limit #{pageMin},#{pageMax}
+</select>
+
+<!-- 删除爱车 -->
+<delete id="deleteMyCar">
+DELETE FROM mycar WHERE id = #{id}
+</delete>
+
+<!-- 更新爱车状态 -->
+<update id="updateStatusToDefault">
+UPDATE mycar SET
+isDefault = #{isDefault}
+WHERE id = ${id}
+</update>
+
+<!-- 查询默认爱车的id -->
+<select id="findDefaultStatus" resultType="java.lang.Integer">
+    select
+        id
+	from  mycar
+	where isDefault = 1 AND cusId = ${cusId} 
+</select>
+
+<!-- 判断第三方登录 -->
+<select id="identityThrLogin" resultType="java.lang.String">
+    select cusPhone from thrlogin where uniqueId = #{uniqueId}
+</select>
+
+<!-- 插入第三方信息 -->
+<insert id="saveThrLogin" parameterType="com.sumainfo.common.entity.ThrLogin">
+ insert into thrlogin(
+        classify,
+        cusPhone,
+        uniqueId,
+        createTime)
+        values
+        (
+        #{classify},
+        #{cusPhone},
+        #{uniqueId},
+        #{createTime})
+</insert>
+
+<delete id="deleteThr">
+delete from thrlogin where uniqueId = #{uniqueId}
+</delete>
+
+<select id="findCusMsById" resultType="java.util.Map">
+SELECT
+	IFNULL(nickName, "") AS nickName,
+	IFNULL(idNumber, "") AS idNumber,
+	IFNULL(sex, "") AS sex,
+    IFNULL(portait,"") AS portait,
+    IFNULL(cellPhone,"") AS cellPhone
+FROM
+	customer 
+WHERE cusId = #{cusId}
+</select>
+
+<select id="findMyMrCar" resultType="java.util.Map">
+SELECT
+	IFNULL(picAdress, "") AS picAdress,
+	IFNULL(carNo, "") AS carNo
+FROM
+	mycar
+WHERE
+	isDefault = 1
+AND cusId = #{cusId}
+</select>
+
+<select id="findCusByUid" resultType="java.util.Map">
+select a.realName,a.cellPhone from customer a
+inner join usedvehicledet b on a.cusId = b.shopId
+where a.status = 0 and b.uId = #{uId}
+</select>
+</mapper>

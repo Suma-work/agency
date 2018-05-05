@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.MaintenanceShopDao">
+
+	<select id="findShopComment" resultType="com.sumainfo.common.entity.CommentEntity">
+	    SELECT
+	    s.cusId AS cusId,
+	    s.cusName AS cusName,
+	    ROUND((s.environmentRate+s.serviceRate+s.skillRate)/3,2) AS rate,
+	    s.comment AS comment,
+	    s.createTime AS createTime,
+	    p.picAddress AS picAddress
+	    FROM shopcomment s
+	    LEFT JOIN pictureSave p ON s.id = p.associationId
+	    WHERE s.shopId = ${shopId} AND s.classify = #{classify} AND p.classify = #{sort}
+	</select>
+      <insert id="saveShopComment" parameterType = "com.sumainfo.common.entity.ShopComment" 
+            useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO shopcomment
+		(cusId,
+		 cusName,
+		 environmentRate,
+		 serviceRate,
+		 skillRate,
+		 comment,
+		 createTime,
+		 shopId,
+		 classify)
+		VALUES 
+		(#{cusId},
+		 #{cusName},
+		 #{environmentRate},
+		 #{serviceRate},
+		 #{skillRate},
+		 #{comment},
+		 #{createTime},
+		 #{shopId},
+		 #{classify})
+	</insert>
+	
+	<select id="commentResult" resultType="java.util.HashMap">
+	SELECT 
+	COUNT(*) AS count,
+	ROUND(AVG((environmentRate+serviceRate+skillRate)/3),2) AS rate
+	FROM shopcomment
+	WHERE shopId = ${shopId} AND classify = #{classify}
+	</select>
+	
+
+</mapper>

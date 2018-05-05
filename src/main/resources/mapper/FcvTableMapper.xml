@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.FcvTableDao">
+
+  <select id="selectIds" resultType="java.lang.Integer">
+  select id from fcvTable
+  </select>
+
+  <select id="selectAll" resultType="com.sumainfo.common.entity.FcvTable">
+  select fcvId,id,name,initial,logo from fcvTable
+  </select>
+  
+  <select id="selectAllById" resultType="com.sumainfo.common.entity.SeclvlTable">
+  select secId,id,name,parentid from seclvlTable where parentid = ${parentid}
+  </select>
+  
+   <delete id="deleteFcvTable">
+   delete from fcvTable
+   </delete>
+   
+   <insert id="insertFcvTable" parameterType="ArrayList">  
+	    INSERT INTO fcvTable (id,name,initial,parentid,logo,depth)  
+	    VALUES  
+	    <foreach collection="list" item="item" index="index" separator=",">  
+	            (#{item.id}, #{item.name},#{item.initial},#{item.parentid},#{item.logo},#{item.depth})  
+	    </foreach> 
+   </insert> 
+   
+   <delete id="deleteSeclvlTable">
+   delete from seclvlTable
+   </delete>
+   
+   <insert id="insertSeclvlTable" parameterType="ArrayList">
+        insert into seclvlTable (id,name,initial,parentid,depth)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">  
+         (#{item.id}, #{item.name},#{item.initial},#{item.parentid},#{item.depth})
+        </foreach>  
+   </insert>  
+</mapper>

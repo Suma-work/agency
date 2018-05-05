@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.UsedVehicleSellsDao">
+    <insert id="saveUsedVehicleMessage" parameterType = "com.sumainfo.common.entity.UsedVehicleSells" 
+            useGeneratedKeys="true" keyProperty="oldId">
+		INSERT INTO usedvehicledet
+		   (bandName,		
+			carName,		
+			carDetName,		
+			sellPrice,		
+			orginPrice,	
+			carEngine,		
+			gearbox,		
+			carType,		
+			rank,		
+			isLicence,	
+			shopId,	
+			shopName,	
+			carLocation,		
+			mileage,	
+			licenceTime,		
+			classify,		
+			isSell,	
+			isShort,		
+			isCompany,		
+			uId,		
+			produce,
+			createTime) 
+		VALUES 
+		(#{bandName},
+		 #{carName},
+		 #{carDetName},
+		 #{sellPrice},
+		 #{orginPrice},
+		 #{carEngine},
+		 #{gearbox},
+		 #{carType},
+		 #{rank},
+		 #{isLicence}, 
+		 #{shopId},
+		 #{shopName},
+		 #{carLocation},
+		 #{mileage},
+		 #{licenceTime},
+		 #{classify},
+		 #{isSell},
+		 #{isShort},
+		 #{isCompany},
+		 #{uId}, 
+		 #{produce},
+		 #{createTime})
+	</insert>
+	
+	 <insert id="savePictureList" parameterType="ArrayList">  
+	    INSERT INTO pictureSave (classify,associationId,picAddress,createTime,slideshow,delfg)  
+	    VALUES  
+	    <foreach collection="list" item="item" index="index" separator=",">  
+	            (#{item.classify}, #{item.associationId},#{item.picAddress},#{item.createTime},#{item.slideshow},#{item.delfg})  
+	    </foreach> 
+   </insert> 
+   <delete id="deleteUsedVehicleMessage">
+   		DELETE FROM usedvehicledet WHERE oldId = #{num}
+   </delete>
+   
+   <select id="findMyUsedVehicle" resultType="java.util.Map">
+	   SELECT  CONCAT_WS("",a.bandName,a.carName,a.carDetName) AS usedVehicleName,
+		       a.carName,
+		       DATE_FORMAT(a.licenceTime,'%Y%m%d') AS licenceDate,
+		       a.mileage,
+		       a.sellPrice,
+		       a.isShort,
+		       b.picAddress,
+		       a.shopId,
+		       a.uId,
+		       DATE_FORMAT(a.createTime,'%Y%m%d') AS createTime
+	   FROM usedvehicledet a
+	   LEFT JOIN picturesave b ON a.uId = b.associationId AND b.slideshow = 2
+	   WHERE a.shopId = #{shopId} AND a.isSell = #{isSell} 
+	   LIMIT ${minPage},${maxPage}
+   </select>
+   
+   <select id="findMyUsedVehicleNum" resultType="java.lang.Integer">
+	   SELECT COUNT(*) AS counts FROM usedvehicledet a
+	   LEFT JOIN picturesave b ON a.uId = b.associationId AND b.slideshow = 2
+	   WHERE a.shopId = #{shopId} AND a.isSell = #{isSell} 
+   </select>
+   
+   <update id="upDateMyUsedVehicle">
+	   UPDATE usedvehicledet SET
+	          isSell = #{isSell}
+	   WHERE shopId = #{shopId} AND uId = #{uId}       
+   </update>
+   
+   <delete id="deleteMyUsedVehicle">
+      DELETE FROM usedvehicledet WHERE uId = #{uId} AND shopId = #{shopId}
+   </delete>
+   
+   <delete id="deleteMyUsedVehiclePic">
+      DELETE FROM picturesave WHERE associationId = #{associationId}
+   </delete>
+   
+</mapper>

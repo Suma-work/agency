@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.MaintenanceShopDao">
+
+	<select id="findShopComment" resultType="com.sumainfo.common.entity.CommentEntity">
+	    SELECT
+	    s.cusId AS cusId,
+	    s.cusName AS cusName,
+	    ROUND((s.environmentRate+s.serviceRate+s.skillRate)/3,2) AS rate,
+	    s.comment AS comment,
+	    s.createTime AS createTime,
+	    p.picAddress AS picAddress
+	    FROM shopComment s
+	    LEFT JOIN pictureSave p ON s.id = p.associationId
+	    WHERE s.shopId = ${shopId} AND s.classify = #{classify} AND p.classify = #{sort}
+	</select>
+      <insert id="saveShopComment" parameterType = "com.sumainfo.common.entity.ShopComment" 
+            useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO shopComment
+		(cusId,
+		 cusName,
+		 environmentRate,
+		 serviceRate,
+		 skillRate,
+		 comment,
+		 createTime,
+		 shopId,
+		 classify)
+		VALUES 
+		(#{cusId},
+		 #{cusName},
+		 #{environmentRate},
+		 #{serviceRate},
+		 #{skillRate},
+		 #{comment},
+		 #{createTime},
+		 #{shopId},
+		 #{classify})
+	</insert>
+	
+	<select id="commentResult" resultType="java.util.HashMap">
+	SELECT 
+	COUNT(*) AS count,
+	ROUND(AVG((environmentRate+serviceRate+skillRate)/3),2) AS rate
+	FROM shopComment
+	WHERE shopId = ${shopId} AND classify = #{classify}
+	</select>
+	
+	<select id="findServeceByShopId" resultType="java.util.Map">
+	SELECT
+		IF(refEl=1, "精品商品", refEl) AS jpsp,
+		IF(upkeepEl=1, "保养服务",upkeepEl ) AS byfw,
+		IF(tyreEl=1, "轮胎服务",tyreEl) AS ltfw,
+		IF(refitEl=1,"改装服务",refitEl) AS gzfw,
+		IF(installEl=1,"安装服务",installEl) AS azfw
+	FROM
+	    shop
+    WHERE shopId = #{shopId}
+	</select>
+	
+	<select id="findKeyIdByServiceName" resultType="java.lang.Integer">
+	 SELECT id FROM serve_offer WHERE svcnm = #{svcnm} AND parent = #{parent}
+	</select>
+	
+	<select id="findServiceByParentId" resultType="java.util.Map">
+	SELECT svcnm,floorPrice,topPrice,inco FROM serve_offer WHERE parent = #{parent} AND shopId = #{shopId}
+	</select>
+	
+    <select id="findServiceNumsByParentId" resultType="java.lang.Integer">
+	SELECT COUNT(*) AS counts FROM serve_offer WHERE parent = #{parent} AND shopId = #{shopId}
+	</select>
+</mapper>

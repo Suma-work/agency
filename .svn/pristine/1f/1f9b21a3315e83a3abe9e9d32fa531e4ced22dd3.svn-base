@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.SellVisitorDao">
+
+<insert id="saveVisitorMain" parameterType="com.sumainfo.common.entity.VisitorMain" keyProperty="id">
+insert into visitorMain
+(visitorName,
+visitorPhone,
+identityCard,
+createTime,
+serviceId
+)values
+(#{visitorName},
+#{visitorPhone},
+#{identityCard},
+#{createTime},
+#{serviceId}
+)
+</insert>
+
+ <insert id="saveVisitorDetList" parameterType="ArrayList">  
+	    INSERT INTO visitorDetail (carBrand,carType,carRecver,createTime,mainId)  
+	    VALUES  
+	    <foreach collection="list" item="item" index="index" separator=",">  
+	            (#{item.carBrand}, #{item.carType},#{item.carRecver},#{item.createTime},#{item.mainId})  
+	    </foreach> 
+ </insert> 
+ 
+ <select id="findVisitorMainList" resultType="com.sumainfo.common.entity.VisitorMain">
+ select
+ id,
+ visitorName,
+ visitorPhone,
+ identityCard,
+ createTime,
+ serviceId
+ from 
+ visitorMain
+ <where>
+ <if test="createTime == null">
+ serviceId = #{serviceId} 
+ and 
+ <![CDATA[ DATE_FORMAT(createTime,'%m-%d-%Y')  <= DATE_FORMAT(NOW(),'%m-%d-%Y') ]]>
+ group by createTime desc
+ </if>
+ <if test="createTime != null">
+ serviceId = #{serviceId} and DATE_FORMAT(createTime,'%m-%d-%Y') like DATE_FORMAT(#{createTime},'%m-%d-%Y')
+ group by createTime desc
+ </if>
+ </where>
+ </select>
+
+</mapper>

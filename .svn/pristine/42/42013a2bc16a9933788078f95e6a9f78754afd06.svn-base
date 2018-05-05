@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.HomePageMsDao">
+
+<select id="getUsMs" resultType="java.util.Map">
+select a.user_id,a.shopid,a.dept_id from sys_user a
+left join sys_token b on a.user_id = b.userId
+where a.status = 1
+and token = #{token}
+</select>
+
+<!-- 店员获取预约、接待、销售的条数 -->
+<select id="assistantOrders" resultType="java.lang.Integer">
+select IFNULL(count(*),0) as counts from vehicleorders 
+where status = #{status}
+and
+uid = ${uid}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by uid
+</select>
+
+<!-- 店员获取销售金额 -->
+<select id="assistantAmount" resultType="java.lang.Double">
+select sum(pmoney) as amount from purchaseinformation
+where pstatus = 1
+and prepared = #{uid}
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d')]]>
+group by prepared
+</select>
+
+<!-- 店长获取预约、接待、销售的条数 -->
+<select id="storeManangerOrders" resultType="java.lang.Integer">
+select IFNULL(count(*),0) as counts from vehicleorders 
+where status = #{status}
+and
+shopId= #{shopId}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by shopId
+</select>
+
+<!-- 店长获取预约、接待、销售的条数及所属店员最后再排名 -->
+<select id="storeManangerOrderMs" resultType="java.util.Map">
+select c.uname,c.counts from 
+(select b.uname,count(*) as counts from vehicleorders a
+left join sys_user b on b.user_id = a.uid
+where a.status = #{status}
+and
+a.shopId= #{shopId}
+and
+<![CDATA[ STR_TO_DATE(a.orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(a.orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by a.uid
+limit 0,10) c
+group by c.counts desc
+</select>
+
+<!-- 店长获取销售金额 -->
+<select id="storeManangerAmount" resultType="java.lang.Double">
+select sum(pmoney) as amount from purchaseinformation
+where pstatus = 1
+and shopid = #{shopId}
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by shopid
+</select>
+
+<!-- 店长获取最佳销售和销售金额 -->
+<select id="storeManangerBestSeller" resultType="java.util.Map">
+select c.pmoney,c.uname from (
+select sum(a.pmoney) as pmoney,b.uname from purchaseinformation a
+left join sys_user b on b.user_id = a.prepared
+where a.pstatus = 1
+and a.shopid = #{shopId}
+and 
+<![CDATA[ DATE_FORMAT(a.paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d')]]>
+and
+<![CDATA[ DATE_FORMAT(a.paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d')]]>
+group by a.prepared) c
+group by c.pmoney desc
+limit 0,10
+</select>
+
+<!-- 店长获取热销车型和销量-->
+<select id="storeManangerHotVehicle" resultType="java.util.Map">
+select a.psjxh,a.vehicleNum from 
+(select psjxh,prepared,count(psjxh) as vehicleNum from purchaseinformation 
+where pstatus = 1
+and shopid = #{shopId}
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by psjxh) a
+group by a.vehicleNum desc
+limit 0,10
+</select>
+
+<!-- 店长获取预约最多的车型和数量 -->
+<select id="storeManangerOrderVehicle" resultType="java.util.Map">
+SELECT a.carName,MAX(a.counts) as nums FROM (
+select carName,count(*) as counts from vehicleorders
+where status != 0
+and shopId = #{shopId}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by carName) a
+</select>
+
+<!-- 区域经理获取预约、接待、销售的条数 -->
+<select id="regionManangerOrders" resultType="java.lang.Integer">
+select IFNULL(count(*),0) as counts from vehicleorders 
+where shopId
+ in (select shopId from shop where classify = 1 AND dept = ${dept})
+AND status = #{status}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d')]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+</select>
+
+<!-- 区域经理获取预约、接待、销售的条数及店铺名称再做排名 -->
+<select id="regionManangerOrderMs" resultType="java.util.Map">
+select c.shopName,c.counts from (
+select b.shopName,count(*) as counts from vehicleorders a
+left join shop b on a.shopId = b.shopId
+where a.shopId
+ in (select shopId from shop where classify = 1 AND dept = ${dept})
+AND a.status = #{status}
+and
+<![CDATA[ STR_TO_DATE(a.orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(a.orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+GROUP by a.shopId
+limit 0,10) c
+group by c.counts desc
+</select>
+
+<!-- 区域经理获取销售金额 -->
+<select id="regionManangerAmount" resultType="java.lang.Double">
+select sum(pmoney) as amount from purchaseinformation
+where pstatus = 1
+and shopid in (select shopId from shop where classify = 1 AND dept = ${dept})
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+</select>
+
+<!-- 区域经理获取最佳销售和销售金额 -->
+<select id="regionManangerBestSeller" resultType="java.util.Map">
+select d.pmoney,d.uname from (
+select sum(a.pmoney) as pmoney,c.uname from purchaseinformation a
+left join shop b on b.shopId = a.shopid
+left join sys_user c on c.user_id = a.prepared
+where a.pstatus = 1
+and a.shopid in (select shopId from shop where classify = 1 AND dept = ${dept})
+and 
+<![CDATA[ DATE_FORMAT(a.paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(a.paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d')]]>
+group by a.prepared) d
+group by d.pmoney desc
+limit 0,10
+</select>
+
+<!-- 区域经理获取热销车型销量 -->
+<select id="regionManangerHotVehicle" resultType="java.util.Map">
+select a.psjxh,a.vehicleNum from 
+(select psjxh,prepared,count(psjxh) as vehicleNum from purchaseinformation 
+where pstatus = 1
+and shopid  in (select shopId from shop where classify = 1 AND dept = ${dept})
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by psjxh) a
+group by a.vehicleNum desc
+limit 0,10
+</select>
+
+<!-- 区域经理获取预约最多的车型和数量 -->
+<select id="regionManangerOrderVehicle" resultType="java.util.Map">
+SELECT a.carName,MAX(a.counts) as nums FROM (
+select carName,count(*) as counts from vehicleorders
+where status != 0
+and shopId in (select shopId from shop where classify = 1 AND dept = ${dept})
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by carName) a
+</select>
+
+<!-- 集团老总获取预约、接待、销售的条数 -->
+<select id="bossOrders" resultType="java.lang.Integer">
+select count(*) as counts from vehicleorders 
+where shopId
+ in (select shopId from shop where classify = 1 AND dept in (select dept_id from sys_dept where parent_id = ${dept}))
+AND status = #{status}
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+</select>
+
+<!-- 集团老总获取预约、接待、销售的条数及大区名称再做排名-->
+<select id="bossOrderMs" resultType="java.util.Map">
+select d.name,d.counts from (
+select c.name,count(*) as counts from vehicleorders a
+left join shop b on a.shopId = b.shopId and b.classify = 1
+left join sys_dept c on c.dept_id = b.dept
+where b.dept
+ in (select dept_id from sys_dept where parent_id = ${dept})
+AND a.status = #{status}
+and
+<![CDATA[ STR_TO_DATE(a.orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(a.orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d')]]>
+group by b.dept
+limit 0,10) d
+group by d.counts desc
+</select>
+
+
+<!-- 集团老总获取销售金额 -->
+<select id="bossAmount" resultType="java.lang.Double">
+select sum(pmoney) as amount from purchaseinformation
+where pstatus = 1
+and shopid in (select shopId from shop where classify = 1 AND dept in (select dept_id from sys_dept where parent_id = ${dept}))
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+</select>
+
+<!-- 集团老总获取最佳销售和销售金额 -->
+<select id="bossManangerBestSeller" resultType="java.util.Map">
+select d.pmoney,d.uname from (
+select sum(a.pmoney) as pmoney,c.uname from purchaseinformation a
+left join shop b on b.shopId = a.shopid and b.classify = 1
+left join sys_user c on a.prepared = c.user_id
+where a.pstatus = 1
+and b.dept in (select dept_id from sys_dept where parent_id = ${dept})
+and 
+<![CDATA[ DATE_FORMAT(a.paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(a.paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by a.prepared) d
+group by d.pmoney desc
+limit 0,10
+</select>
+
+<!-- 集团老总获取热销车型和销量 -->
+<select id="bossHotVehicle" resultType="java.util.Map">
+select a.psjxh,a.vehicleNum from 
+(select psjxh,prepared,count(psjxh) as vehicleNum from purchaseinformation 
+where pstatus = 1
+and shopid in (select shopId from shop where classify = 1 AND dept in (select dept_id from sys_dept where parent_id = ${dept}))
+and 
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ DATE_FORMAT(paudittime,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by psjxh) a
+group by a.vehicleNum desc
+limit 0,10
+</select>
+
+<!-- 集团老总获取预约最多的车型和数量 -->
+<select id="bossManangerOrderVehicle" resultType="java.util.Map">
+SELECT a.carName,MAX(a.counts) as nums FROM (
+select carName,count(*) as counts from vehicleorders
+where status != 0
+and shopId in (select shopId from shop where classify = 1 AND dept in (select dept_id from sys_dept where parent_id = ${dept}))
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') >= STR_TO_DATE(#{startDate},'%Y%m%d') ]]>
+and
+<![CDATA[ STR_TO_DATE(orderDate,'%Y%m%d') <= STR_TO_DATE(#{endDate},'%Y%m%d') ]]>
+group by carName) a
+</select>
+</mapper>

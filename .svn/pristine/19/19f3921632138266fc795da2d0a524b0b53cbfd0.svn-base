@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.CustomerDao">
+
+<!--保存客户信息 -->
+<insert id="saveOrUpdate" keyProperty="cusId" parameterType="com.sumainfo.common.entity.Customer" useGeneratedKeys="true">
+    <!-- 查看是否存在cellPhone,如果存在及更新，否则插入 -->
+    <selectKey keyProperty="count" order="BEFORE" resultType="int">  
+        select count(*) as count from customer where cellPhone = #{cellPhone}
+    </selectKey>        
+    <!-- 如果大于0则更新 -->  
+    <if test="count>0">  
+        update customer set
+        nickName = #{nickName},
+        realName = #{realName},
+        idNumber = #{idNumber},
+        passWord = #{passWord},  
+        cellPhone = #{cellPhone},
+        modifyTime = #{modifyTime},
+        createTime = #{createTime}
+        where cellPhone = #{cellPhone}
+    </if>
+    <!-- 如果等于0则保存 -->  
+    <if test="count==0">
+        insert into customer(
+        nickName,
+        realName,
+        idNumber,
+        passWord,
+        cellPhone,
+        modifyTime,
+        createTime)
+        values
+        (
+        #{nickName},
+        #{realName},
+        #{idNumber},
+        #{passWord},
+        #{cellPhone},
+        #{modifyTime},
+        #{createTime})
+    </if>
+</insert>
+<!-- 查询客户信息  -->
+<select id="loginAccount" parameterType="java.lang.String" resultType="com.sumainfo.common.entity.Customer">
+select  cusId,
+        nickName,
+        realName,
+        idNumber,
+        passWord,
+        cellPhone,
+        modifyTime,
+        createTime
+from customer
+where cellPhone = #{cellPhone}       
+</select>
+
+</mapper>

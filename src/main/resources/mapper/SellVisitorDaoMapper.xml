@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.SellVisitorDao">
+
+<insert id="saveVisitorMain" parameterType="com.sumainfo.common.entity.VisitorMain" useGeneratedKeys="true" keyProperty="id">
+insert into vehicleorders
+(orderDate,
+orderTime,
+status,
+orderCode,
+viewerName,
+viewerPhone,
+shopId,
+carName,
+classify,
+createTime,
+identityCard,
+uid
+)values
+(#{orderDate},
+#{orderTime},
+#{status},
+#{orderCode},
+#{viewerName},
+#{viewerPhone},
+#{shopId},
+#{carName},
+#{classify},
+#{createTime},
+#{identityCard},
+#{uid}
+)
+</insert>
+
+ 
+ <select id="findVisitorMainList" resultType="com.sumainfo.common.entity.VisitMs">
+ select
+ id,
+ viewerName,
+ viewerPhone,
+ orderDate,
+ orderTime
+ from 
+ vehicleorders
+ <trim prefix="WHERE" prefixOverrides="AND|OR">
+ <if test="type!=null">
+ AND uid = ${uid} 
+ AND
+ <![CDATA[ orderDate = DATE_FORMAT(NOW(),'%Y%m%d') ]]>
+ group by createTime desc
+ </if>
+  <if test="type==null">
+ AND uid = ${uid} 
+ AND
+ <![CDATA[ orderDate < DATE_FORMAT(NOW(),'%Y%m%d') ]]>
+ group by createTime desc
+ </if>
+ </trim>
+ limit #{minPage},#{maxPage}
+ </select>
+ 
+ <select id="findVisitorNum" resultType="java.lang.Integer">
+ select
+count(*) as counts
+ from 
+ vehicleorders
+ <trim prefix="WHERE" prefixOverrides="AND|OR">
+ <if test="type!=null">
+ AND uid = ${uid} 
+ AND
+ <![CDATA[ orderDate = DATE_FORMAT(NOW(),'%Y%m%d') ]]>
+ </if>
+  <if test="type==null">
+ AND uid = ${uid} 
+ AND
+ <![CDATA[ orderDate < DATE_FORMAT(NOW(),'%Y%m%d') ]]>
+ </if>
+ </trim>
+ </select>
+ 
+ <update id="updateVehicleOrders">
+ update vehicleorders set status = 2 where id = ${id}
+ </update>
+
+</mapper>

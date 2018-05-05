@@ -1,0 +1,27 @@
+#\u914d\u7f6e\u670d\u52a1\u7aef\u53e3\u548c\u5f00\u5934
+server.port=8080
+server.context-path=/agency
+#\u914d\u7f6emysql
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.url=jdbc:mysql://52.80.16.16:3306/agency?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&failOverReadOnly=false&allowMultiQueries=true
+spring.datasource.username=agency
+spring.datasource.password=763061EBB2BDC5DB
+spring.datasource.max-active=100
+spring.datasource.max-idle=20
+spring.datasource.min-idle=20
+spring.datasource.initial-size=30
+spring.datasource.max-wait-millis=60000
+#\u914d\u7f6emybatis
+mybatis.typeAliasesPackage=com.sumainfo.common.entity
+mybatis.mapperLocations=classpath:mapper/*.xml
+#\u914d\u7f6elog4j
+logging.level.org.springframework=WARN
+logging.level.com.sumainfo.agency.dao=DEBUG
+logging.file=logs/spring-boot-logging.log
+#\u914d\u7f6e\u4e0a\u4f20\u56fe\u7247\u5927\u5c0f
+#Spring Boot 1.3.x\u6216\u8005\u4e4b\u524d
+#multipart.maxFileSize = 100Mb  
+#multipart.maxRequestSize=150Mb
+#Spring Boot 1.4.x\u6216\u8005\u4e4b\u540e
+spring.http.multipart.maxFileSize=100Mb
+spring.http.multipart.maxRequestSize=1000Mb

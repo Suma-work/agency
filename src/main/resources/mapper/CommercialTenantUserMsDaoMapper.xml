@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.CommercialTenantUserMsDao">
+
+<!-- 获取用户的角色和基本信息 -->
+<select id="findUserMs" resultType="com.sumainfo.common.entity.ComTenUser"> 
+SELECT
+    a.user_id,
+    a.username,
+    a.mobile,
+    a.uname,
+    a.status,
+	a.portait AS portait,
+	a.salt,
+	a.`password` AS passWord,
+	a.shopid AS shopId,
+	b.role_id AS roleId
+FROM
+	sys_user a
+LEFT JOIN sys_user_role b ON a.user_id = b.user_id
+WHERE a.username = #{userName}
+</select>
+
+<!-- 更新token -->
+<insert id="updateUserToken" keyProperty="id" parameterType="com.sumainfo.common.entity.UserToken" useGeneratedKeys="true">
+	    <!-- 查看是否存在cellPhone,如果存在及更新，否则插入 -->
+	    <selectKey keyProperty="count" order="BEFORE" resultType="int">  
+	        select count(*) as count from sys_token where userId = #{userId}
+	    </selectKey>        
+	    <!-- 如果大于0则更新 -->  
+	    <if test="count>0">  
+	        UPDATE sys_token SET
+	         userId = #{userId},
+	         token = #{token}
+	        WHERE userId = #{userId}
+	    </if>
+	    <!-- 如果等于0则保存 -->  
+	    <if test="count==0">
+	      INSERT INTO 
+				sys_token (userId,token) 
+		  VALUES 
+				(#{userId},#{token})  
+	    </if>
+</insert>
+
+<!-- 通过token查询id -->
+<select id="findUserId" resultType="java.lang.Integer">
+select userId from sys_token where token = #{token}
+</select>
+
+<!-- 通过id查询密码和盐值 -->
+<select id="identifyPs" resultType="java.util.Map">
+select password,salt from sys_user where user_id = #{user_id}
+</select>
+
+<!-- 通过id修改密码 -->
+<update id="updatePsById">
+update sys_user set password = #{password} where user_id = #{user_id}
+</update>
+
+<!-- 通过手机号查询id -->
+<select id="identifyPhone" resultType="java.lang.Integer">
+select user_id from sys_user where mobile= #{mobile}
+</select>
+
+<!-- 获取客户端的首页banner图 -->
+<select id="getPlatBanner" resultType="java.util.Map">
+select picUrl,netUrl from platBanner
+</select>
+
+<!-- 通过用户id查询角色id -->
+<select id="findUserRole" resultType="java.lang.Integer">
+select b.role_id from sys_user a
+left join sys_role_dept b on a.dept_id = b.dept_id
+ where a.user_id = ${user_id}
+</select>
+
+<!-- 通过用户id查询用户店铺类型、id及用户部分信息 -->
+<select id="findUserMsForOrder" resultType="com.sumainfo.common.entity.SysUserMs">
+select a.shopid,a.username,a.mobile,b.classify from sys_user a left join shop b on a.shopid = b.shopId where a.user_id = ${user_id}
+</select>
+
+<!-- 通过用户token查询用户店铺类型、id及用户部分信息 -->
+<select id="findUserDetMs" resultType="com.sumainfo.common.entity.SysUserMs">
+select 
+a.shopid,
+a.username,
+a.mobile,
+a.user_id,
+b.classify
+from 
+sys_user a 
+left join shop b on a.shopid = b.shopId 
+left join sys_token c on a.user_id = c.userId
+where
+c.token = #{token}
+</select>
+</mapper>

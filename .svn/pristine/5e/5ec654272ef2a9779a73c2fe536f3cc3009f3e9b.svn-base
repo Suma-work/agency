@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.ComplaintManagementDao">
+
+<insert id="saveComplaintMessage" parameterType="com.sumainfo.common.entity.ComplaintManagement" keyProperty="id">
+insert into complainTable
+(cusId,
+cusName,
+shopId,
+shopName,
+complaintType,
+dealSchedule,
+reasons,
+createTime,
+modifyTime
+)values
+(#{cusId},
+#{cusName},
+#{shopId},
+#{shopName},
+#{complaintType},
+#{dealSchedule},
+#{reasons},
+#{createTime},
+#{modifyTime}
+)
+</insert>
+
+<delete id="deleteComplaintMessage">
+delete from complainTable where id = #{results}
+</delete>
+
+</mapper>

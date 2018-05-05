@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.PlatFormReleaseDao">
+
+<select id="findHotNewVehicle" resultType="com.sumainfo.common.entity.PlatFormReleaseVehicle">
+SELECT
+	f.picAddress,
+	f.carName,
+	f.minPrice,
+	f.maxPrice,
+	f.createTime
+FROM
+	(
+		SELECT
+			d.picAddress,
+			d.carName,
+			e.minPrice,
+			e.maxPrice,
+			d.createTime
+		FROM
+			(
+				SELECT
+					a.hotcar as carName,
+					c.picAddress,
+					a.createTime
+				FROM
+					hotvehicle a
+				LEFT JOIN vehiclebanner b ON a.hotcar = b.carName AND a.shopId = b.shopId
+				AND b.classify = 1
+				LEFT JOIN vehbannerpic c ON b.vehId = c.vehId
+				AND c.isShow = 1
+				WHERE a.hottype = 1
+			) d
+		LEFT JOIN (
+			SELECT
+				carName,
+				IFNULL(MIN(sellPrice), 0) AS minPrice,
+				IFNULL(MAX(sellPrice), 0) AS maxPrice
+			FROM
+				vehicledet
+			GROUP BY
+				carName
+		) e ON d.carName = e.carName
+	) f
+GROUP BY
+	f.createTime DESC
+LIMIT 0,6	
+</select>
+
+<select id="findHotUsedVehicle" resultType="com.sumainfo.common.entity.PlatFormReleaseVehicle">
+      SELECT
+			d.picAddress,
+			d.carName,
+			d.minPrice,
+			d.maxPrice,
+			d.createTime
+		FROM
+			(
+				SELECT
+					a.hotcar as carName,
+					c.picAddress,
+					a.createTime,
+                    MIN(b.sellPrice) AS minPrice,
+                    MAX(b.sellPrice) AS maxPrice
+				FROM
+					hotvehicle a
+                INNER JOIN usedvehicledet b ON a.shopId = b.shopId  AND a.hotcar = b.carName
+				INNER JOIN picturesave c ON b.uId = c.associationId AND c.slideshow = 2 AND c.classify = 2
+				WHERE
+					a.hottype = 1
+			) d
+    GROUP BY
+	        d.createTime DESC
+    LIMIT 0,6
+</select>
+
+<select id="findNearShop" resultType="com.sumainfo.common.entity.NearShopEntity">
+SELECT
+	shopId,
+	shopName,
+	shopPicAdress,
+	lon,
+	lat,
+	round(6378.138*2*asin(sqrt(pow(sin((({$lat}*pi())/180-lat*pi()/180)/2),2)+cos(({$lat}*pi())/180)*cos(lat*pi()/180)* pow(sin((({$lon}*pi())/180-lon*pi()/180)/2),2)))*1000) AS distance,
+FROM
+	shop
+WHERE
+	classify = #{classify}
+GROUP BY distance ASC
+LIMIT 0,5	
+</select>
+
+<select id="findNearShops" resultType="com.sumainfo.common.entity.NearShopEntity">
+${shopSql}	
+</select>
+
+<select id="getzdMs" resultType="com.sumainfo.common.entity.VehiclePrice">
+SELECT 
+     code,
+     minPrice,
+     maxPrice
+FROM vehicleprice
+WHERE code = #{code}     
+</select>
+
+<select id="getptNewVehicleMs" resultType="com.sumainfo.common.entity.PlatFormReleaseNewVehicle">
+SELECT m.bandName,m.carName,m.shopId,m.picAddress,m.minPrice,m.counts FROM
+(SELECT f.bandName,f.carName,f.shopId,f.picAddress,g.minPrice,g.counts FROM
+(SELECT c.bandName,c.carName,c.shopId,d.picAddress FROM
+(SELECT a.bandName,a.carName,a.shopId,b.vehId FROM
+(SELECT bandName,carName,shopId FROM vehiclemain GROUP BY shopId,carName) a
+LEFT JOIN vehiclebanner b ON a.shopId = b.shopId AND a.carName = b.carName AND b.classify = 1
+WHERE b.vehId IS NOT NULL) c
+LEFT JOIN vehbannerpic d ON c.vehId = d.vehId AND d.isShow = 1) f
+LEFT JOIN
+(SELECT a.shopId,a.carName,a.minPrice,b.counts FROM
+(SELECT shopId,carName,IFNULL(MIN(sellPrice),0) AS minPrice FROM vehicledet 
+GROUP BY carName,shopId) a
+LEFT JOIN
+(SELECT carName,COUNT(*) AS counts FROM vehicledet GROUP BY carName) b
+ON a.carName = b.carName) g 
+ON f.shopId = g.shopId AND f.carName = g.carName) m
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="carName != null and carName !=''">
+		 and m.carName =#{carName}
+	</if>
+	<if test="bandName != null and bandName !=''">
+		and m.bandName LIKE CONCAT(CONCAT('%', #{bandName}), '%')
+	</if>
+	<if test="minPrice != null and minPrice !=''">
+		and m.minPrice &gt;= #{minPrice}
+	</if>
+	<if test="maxPrice != null and maxPrice !=''">
+		and m.minPrice &lt;= #{maxPrice}
+	</if>
+</trim>
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getptNewVehicleMsNum" resultType="java.lang.Integer">
+SELECT COUNT(*) AS counts FROM
+(SELECT f.bandName,f.carName,f.shopId,f.picAddress,g.minPrice,g.counts FROM
+(SELECT c.bandName,c.carName,c.shopId,d.picAddress FROM
+(SELECT a.bandName,a.carName,a.shopId,b.vehId FROM
+(SELECT bandName,carName,shopId FROM vehiclemain GROUP BY shopId,carName) a
+LEFT JOIN vehiclebanner b ON a.shopId = b.shopId AND a.carName = b.carName AND b.classify = 1
+WHERE b.vehId IS NOT NULL) c
+LEFT JOIN vehbannerpic d ON c.vehId = d.vehId AND d.isShow = 1) f
+LEFT JOIN
+(SELECT a.shopId,a.carName,a.minPrice,b.counts FROM
+(SELECT shopId,carName,IFNULL(MIN(sellPrice),0) AS minPrice FROM vehicledet 
+GROUP BY carName,shopId) a
+LEFT JOIN
+(SELECT carName,COUNT(*) AS counts FROM vehicledet GROUP BY carName) b
+ON a.carName = b.carName) g 
+ON f.shopId = g.shopId AND f.carName = g.carName) m
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="carName != null and carName !=''">
+		 and m.carName =#{carName}
+	</if>
+	<if test="bandName != null and bandName !=''">
+		and m.bandName LIKE CONCAT(CONCAT('%', #{bandName}), '%')
+	</if>
+	<if test="minPrice != null and minPrice !=''">
+		and m.minPrice &gt;= #{minPrice}
+	</if>
+	<if test="maxPrice != null and maxPrice !=''">
+		and m.minPrice &lt;= #{maxPrice}
+	</if>
+</trim>
+</select>
+
+<select id="getptUsedVehicleMs" resultType="com.sumainfo.common.entity.PlatFormReleaseUsedVehicle">
+SELECT
+	a.shopId,
+	b.picAddress,
+	a.carName,
+	a.mileage,
+	DATE_FORMAT(a.licenceTime,'%Y年%m月%d日') AS licenceTime,
+	a.sellPrice,
+	a.classify
+FROM
+	usedvehicledet a
+LEFT JOIN picturesave b ON a.uId = b.associationId
+AND b.slideshow = 2
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="carName != null and carName !=''">
+		 and a.carName =#{carName}
+	</if>
+	<if test="bandName != null and bandName !=''">
+		and a.bandName LIKE CONCAT(CONCAT('%', #{bandName}), '%')
+	</if>
+	<if test="minPrice != null and minPrice !=''">
+		and a.sellPrice &gt;= #{minPrice}
+	</if>
+	<if test="maxPrice != null and maxPrice !=''">
+		and a.sellPrice &lt;= #{maxPrice}
+	</if>
+</trim>
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getptUsedVehicleMsNum" resultType="java.lang.Integer">
+SELECT
+	COUNT(*) AS counts
+FROM
+	usedvehicledet a
+LEFT JOIN picturesave b ON a.uId = b.associationId
+AND b.slideshow = 2
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="carName != null and carName !=''">
+		 and a.carName =#{carName}
+	</if>
+	<if test="bandName != null and bandName !=''">
+		and a.bandName LIKE CONCAT(CONCAT('%', #{bandName}), '%')
+	</if>
+	<if test="minPrice != null and minPrice !=''">
+		and a.sellPrice &gt;= #{minPrice}
+	</if>
+	<if test="maxPrice != null and maxPrice !=''">
+		and a.sellPrice &lt;= #{maxPrice}
+	</if>
+</trim>
+</select>
+
+<!-- 4S店 -->
+<select id="getpt4SShopMsNoLat" resultType="com.sumainfo.common.entity.PlatFromReleaseUsedShopMs">
+SELECT 
+d.shopId,
+d.shopName,
+d.shopPicAdress,
+d.citynm,
+d.lat,
+d.lon,
+d.soreCounts,
+d.rate,
+d.vehicleCounts,
+0 AS distance,
+d.address 
+FROM
+(SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,c.vehicleCounts,a.address FROM shop a
+LEFT JOIN 
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId
+LEFT JOIN
+(SELECT shopId,COUNT(*) AS vehicleCounts FROM vehicledet
+GROUP BY shopId) c
+ON a.shopId = c.shopId WHERE a.classify = 1) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+GROUP BY d.rate DESC
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getpt4SShopMs" resultType="com.sumainfo.common.entity.PlatFromReleaseUsedShopMs">
+SELECT 
+d.shopId,
+d.shopName,
+d.shopPicAdress,
+d.citynm,
+d.lat,
+d.lon,
+d.soreCounts,
+d.rate,
+d.vehicleCounts,
+0 AS distance,
+d.address 
+FROM
+(SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,c.vehicleCounts,a.address FROM shop a
+LEFT JOIN 
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId
+LEFT JOIN
+(SELECT shopId,COUNT(*) AS vehicleCounts FROM vehicledet
+GROUP BY shopId) c
+ON a.shopId = c.shopId WHERE a.classify = 1) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+GROUP BY distance ASC,d.rate DESC
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getpt4SShopMsNum" resultType="java.lang.Integer">
+SELECT 
+COUNT(*) AS counts
+FROM
+(SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,c.vehicleCounts,a.address FROM shop a
+LEFT JOIN 
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId
+LEFT JOIN
+(SELECT shopId,COUNT(*) AS vehicleCounts FROM vehicledet
+GROUP BY shopId) c
+ON a.shopId = c.shopId WHERE a.classify = 1) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+</select>
+
+<!-- 二手车店 -->
+<select id="getptUsedShopMs" resultType="com.sumainfo.common.entity.PlatFromReleaseUsedShopMs">
+SELECT d.shopId,
+d.shopName,
+d.shopPicAdress,
+d.citynm,
+d.lat,
+d.lon,
+d.soreCounts,
+d.rate,
+d.vehicleCounts,
+round(6378.138*2*asin(sqrt(pow(sin( (#{lat}*pi()/180-lat*pi()/180)/2),2)+cos(#{lat}*pi()/180)*cos(lat*pi()/180)* pow(sin( (#{lon}*pi()/180-lon*pi()/180)/2),2)))*1000) AS distance,
+d.address
+FROM (
+SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,a.address,b.soreCounts,b.rate,c.vehicleCounts FROM
+(select shopId,shopPicAdress,shopName,citynm,lat,lon,address FROM shop WHERE classify = 3) a
+LEFT JOIN
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId
+LEFT JOIN
+(SELECT shopId,COUNT(*) AS vehicleCounts FROM usedvehicledet WHERE classify = 1 GROUP BY shopId) c
+ON a.shopId = c.shopId ) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+GROUP BY distance ASC,d.rate DESC
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getptUsedShopMsNoLat" resultType="com.sumainfo.common.entity.PlatFromReleaseUsedShopMs">
+SELECT d.shopId,
+d.shopName,
+d.shopPicAdress,
+d.citynm,
+d.lat,
+d.lon,
+d.soreCounts,
+d.rate,
+d.vehicleCounts,
+0 AS distance,
+d.address
+FROM (
+SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,a.address,b.soreCounts,b.rate,c.vehicleCounts FROM
+(select shopId,shopPicAdress,shopName,citynm,lat,lon,address FROM shop WHERE classify = 3) a
+LEFT JOIN
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId
+LEFT JOIN
+(SELECT shopId,COUNT(*) AS vehicleCounts FROM usedvehicledet WHERE classify = 1 GROUP BY shopId) c
+ON a.shopId = c.shopId ) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+GROUP BY d.rate DESC
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getptUsedShopMsNum" resultType="java.lang.Integer">
+SELECT COUNT(*) AS counts FROM (
+SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,c.vehicleCounts FROM
+(select shopId,shopPicAdress,shopName,citynm,lat,lon FROM shop WHERE classify = 3) a
+LEFT JOIN
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId
+LEFT JOIN
+(SELECT shopId,COUNT(*) AS vehicleCounts FROM usedvehicledet WHERE classify = 1 GROUP BY shopId) c
+ON a.shopId = c.shopId ) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+</select>
+
+<!-- 维保店 -->
+<select id="getptMsShopMs" resultType="com.sumainfo.common.entity.PlatFromReleaseUsedShopMs">
+SELECT 
+d.shopId,
+d.shopName,
+d.shopPicAdress,
+d.citynm,
+d.lat,
+d.lon,
+d.soreCounts,
+d.rate,
+d.vehicleCounts,
+round(6378.138*2*asin(sqrt(pow(sin( (#{lat}*pi()/180-lat*pi()/180)/2),2)+cos(#{lat}*pi()/180)*cos(lat*pi()/180)* pow(sin( (#{lon}*pi()/180-lon*pi()/180)/2),2)))*1000) AS distance,
+d.address 
+FROM
+(SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,0 AS vehicleCounts,a.address FROM shop a
+LEFT JOIN 
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+WHERE classify = 2
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId 
+) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+GROUP BY distance ASC,d.rate DESC
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getptMsShopMsNoLat" resultType="com.sumainfo.common.entity.PlatFromReleaseUsedShopMs">
+SELECT 
+d.shopId,
+d.shopName,
+d.shopPicAdress,
+d.citynm,
+d.lat,
+d.lon,
+d.soreCounts,
+d.rate,
+d.vehicleCounts,
+0 AS distance,
+d.address 
+FROM
+(SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,0 AS vehicleCounts,a.address FROM shop a
+LEFT JOIN 
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+WHERE classify = 2
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId 
+) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+GROUP BY d.rate DESC
+LIMIT #{minPageNum},#{maxPageNum}
+</select>
+
+<select id="getptMsShopMsNum" resultType="java.lang.Integer">
+SELECT 
+COUNT(*) AS counts
+FROM
+(SELECT a.shopId,a.shopName,a.shopPicAdress,a.citynm,a.lat,a.lon,b.soreCounts,b.rate,0 AS vehicleCounts,a.address FROM shop a
+LEFT JOIN 
+(SELECT
+  shopId,
+	COUNT(*) AS soreCounts,
+  ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+FROM
+	shopcomment
+WHERE classify = 2
+GROUP BY
+	shopId) b
+ON a.shopId = b.shopId 
+) d
+<trim prefix="WHERE" prefixOverrides="AND|OR">
+	<if test="citynm != null and citynm !=''">
+		 and d.citynm =#{citynm}
+	</if>
+	<if test="shopName != null and shopName !=''">
+		and d.shopName LIKE CONCAT(CONCAT('%', #{shopName}), '%')
+	</if>
+</trim>
+</select>
+</mapper>

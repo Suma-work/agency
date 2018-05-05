@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+	<mapper namespace="com.sumainfo.agency.dao.QueryCount">
+	
+		<select id="queryDept_id" resultType="int">
+			SELECT  u.dept_id FROM sys_token AS t JOIN sys_user AS u ON t.userId=u.user_id JOIN  sys_dept AS d ON u.dept_id= d.dept_id
+			WHERE  token=#{token} 
+		</select>
+	
+		<select id="querysys_dept" resultType="java.util.Map">
+		
+			SELECT   p.dept_id,p.parent_id,p.name,p.order_num,p.isregion,p.del_flag ,u.uname,u.mobile,u.shopid
+			FROM  sys_dept  AS p  LEFT JOIN sys_user AS u ON p.dept_id=u.dept_id
+			WHERE parent_id=#{parent_id}
+			 LIMIT #{start},#{limit}
+		</select>
+	
+		<select id="querysys_deptcount" resultType="int">
+		
+			SELECT  COUNT(1)  FROM  sys_dept
+			WHERE parent_id=#{parent_id}
+		
+		
+		</select>
+		
+		
+		
+		<select id="querysys_dept1" resultType="java.util.Map">
+		
+			SELECT  p.dept_id,p.parent_id,p.name,p.order_num,p.isregion,p.del_flag ,u.uname,u.mobile,u.shopid
+			FROM  sys_dept  AS p  LEFT JOIN sys_user AS u ON p.dept_id=u.dept_id
+			WHERE parent_id=#{parentid}
+			 LIMIT #{start},#{limit}
+		</select>
+	
+		<select id="querysys_deptcount1" resultType="int">
+			SELECT  COUNT(1)
+			FROM  sys_dept  AS p  LEFT JOIN sys_user AS u ON p.dept_id=u.dept_id
+			WHERE parent_id=#{parentid}
+		
+		
+		</select>
+	
+	</mapper>

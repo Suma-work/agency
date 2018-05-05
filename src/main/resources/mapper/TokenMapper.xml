@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.TokenDao">
+
+    <insert id="insertToken" parameterType = "com.sumainfo.common.entity.Token" useGeneratedKeys="true" keyProperty="tokenId">
+		INSERT INTO token
+		(userId,
+		tokenMsg) 
+		VALUES 
+		(#{userId},
+		#{tokenMsg})
+	</insert>
+	
+	<select id="selectToken" resultType="java.lang.String">
+	    SELECT tokenMsg FROM token WHERE userId = ${userId}
+	</select>
+	
+	<select id="selectByToken" resultType="java.lang.Integer">
+	    SELECT userId FROM token WHERE tokenMsg = #{tokenMsg}
+	</select>
+	
+	<!-- 暂时不用该sql -->
+	<!-- <insert id="updateToken">
+		INSERT INTO 
+			token (userId,tokenMsg) 
+		VALUES 
+			(${userId},#{tokenMsg})  
+		ON DUPLICATE KEY UPDATE 
+			userId=#{userId}
+	</insert>
+	 -->
+	
+	<insert id="updateToken" keyProperty="tokenId" parameterType="com.sumainfo.common.entity.Token" useGeneratedKeys="true">
+	    <!-- 查看是否存在cellPhone,如果存在及更新，否则插入 -->
+	    <selectKey keyProperty="count" order="BEFORE" resultType="int">  
+	        select count(*) as count from token where userId = #{userId}
+	    </selectKey>        
+	    <!-- 如果大于0则更新 -->  
+	    <if test="count>0">  
+	        UPDATE token SET
+	         userId = #{userId},
+	        tokenMsg = #{tokenMsg}
+	        WHERE userId = #{userId}
+	    </if>
+	    <!-- 如果等于0则保存 -->  
+	    <if test="count==0">
+	      INSERT INTO 
+				token (userId,tokenMsg) 
+		  VALUES 
+				(#{userId},#{tokenMsg})  
+	    </if>
+    </insert>
+	
+<!-- 	<delete id="deleteToken">
+	    DELETE FROM token WHERE otherIdetify = #{otherIdetify}
+	</delete> -->
+	<select id="findCustomerMs" resultType="com.sumainfo.common.entity.Customer">
+	select b.* from token a inner join customer b on a.userId = b.cusId and b.status = 0 where a.tokenMsg = #{tokenMsg}
+	</select>
+
+</mapper>

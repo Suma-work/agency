@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.ShopMapper">
+
+	<select id="Shop" resultType="java.util.Map">
+		SELECT shopId,classify FROM `shop`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="shopId !=null and shopId !='' ">
+			 and shopId=#{shopId}
+			</if>
+		</trim>
+	</select>
+
+	<select id="getSumShopcomment" resultType="java.util.Map">
+		SELECT 
+		COUNT(*) AS count,
+		ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+		FROM shopComment
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+			<if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+			<!-- 评价类型 -->
+			<if test="typeShop !=null and typeShop !='' ">
+				AND classify=#{typeShop}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getShopSlhcar" resultType="java.util.Map">
+		SELECT vm.bandName,vm.carName,vb.vehId FROM `vehiclemain` vm 
+		LEFT JOIN vehiclebanner vb on vm.shopId=vb.shopId and vm.carName=vb.carName
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="shopId !=null and shopId !='' ">
+				and vm.shopId=#{shopId}
+			</if>
+		</trim>
+		GROUP BY vm.carName
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+	
+	<select id="getPicturesave" resultType="java.util.Map">
+		SELECT picAddress FROM `picturesave`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND associationId=#{shopId}
+			</if>
+			<!-- 图片分类 -->
+			<if test="picturesaveType !=null and picturesaveType !='' ">
+				AND classify=#{picturesaveType}
+			</if>
+			<!-- 展示类型slideshow为3 -->
+			<if test="slideshow !=null and slideshow !='' ">
+				AND slideshow=#{slideshow}
+			</if>
+		</trim>
+		LIMIT 1
+	</select>
+	
+	<select id="getShopList" resultType="java.util.Map">
+		SELECT s.shopId,s.shopName,s.address,group_concat(d.serveMold)serveMold from shop s 
+		LEFT JOIN (select relevanceId,serveMold from dedicatedservice 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 关联类型 -->
+		    <if test="typeShop !=null and typeShop !='' ">
+				AND relevanceMold=#{typeShop}
+			</if>
+		</trim>
+		) d on s.shopId=d.relevanceId 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺类型 -->
+		    <if test="typeShop !=null and typeShop !='' ">
+				AND s.classify=#{typeShop}
+			</if>
+		</trim>
+		GROUP BY s.shopId,s.shopName,s.address
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+	
+	<select id="getShopCount" resultType="java.lang.Integer" parameterType="java.util.Map">
+		SELECT count(1) from shop 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="typeShop !=null and typeShop != '' ">
+				and classify=#{typeShop}
+			</if>
+		</trim>
+	</select>
+
+	<select id="getPicturesaveList" resultType="java.util.Map">
+		SELECT picAddress,slideshow FROM `picturesave`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND associationId=#{shopId}
+			</if>
+			<!-- 图片分类 -->
+			<if test="picturesaveType !=null and picturesaveType !='' ">
+				AND classify=#{picturesaveType}
+			</if>
+				and slideshow in
+				<foreach collection="ids" index="index" item="item" open="(" separator="," close=")">
+               		#{item}
+          		</foreach>
+		</trim>
+	</select>
+	
+	<select id="getShopcomment" resultType="java.util.Map">
+		  select s.id as comid,s.cusId,s.cusName,c.sex,c.portait,s.environmentRate,s.serviceRate,s.skillRate,
+		 s.`comment`,date_format(s.createTime, '%Y年%m月%d日') AS createTime,CONCAT(ifnull(s.img1,''),
+		 ";",ifnull(s.img2,''),";",ifnull(s.img3,''),";",ifnull(s.img4,''),";",ifnull(s.img5,'')) 
+		as imgs from shopComment s LEFT JOIN (select cusId,portait,sex from customer)c on 
+		s.cusId=c.cusId
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+			<!-- 评价类型 -->
+			<if test="shopCommentType !=null and shopCommentType !='' ">
+				AND classify=#{shopCommentType}
+			</if>
+		</trim>
+		GROUP BY id,cusName
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+	
+	<select id="shopCommentListCout" resultType="java.lang.Integer" parameterType="java.util.Map">
+	select count(1) from shopComment s LEFT JOIN (select cusId,portait,sex from customer)c 
+	on s.cusId=c.cusId 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+			<!-- 评价类型 -->
+			<if test="shopCommentType !=null and shopCommentType !='' ">
+				AND classify=#{shopCommentType}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getShop" resultType="java.util.Map">
+		SELECT s.shopId,s.shopName,s.address,s.lon,s.lat,group_concat(d.serveMold)serveMold from 
+		(SELECT shopId,shopName,address,lon,lat FROM shop 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+			<!-- 店铺类型 -->
+		    <if test="classify !=null and classify !='' ">
+				AND classify=#{classify}
+			</if>
+		</trim>
+		) s LEFT JOIN dedicatedservice d on s.shopId=d.relevanceId GROUP BY s.shopId 
+		limit 1
+	</select>
+	
+	<select id="getShopEl" resultType="java.util.Map">
+		SELECT shopId,shopName,address,lon,lat from shop
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+		</trim>
+		limit 1
+	</select>
+	
+	<select id="getServeListCount" resultType="java.util.Map">
+		SELECT parent,count(id)count FROM serve_offer
+		 <trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺id -->
+			<if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+			and parent in
+				<foreach collection="parentlist" index="index" item="item" open="(" separator="," close=")">
+               		#{item}
+          		</foreach>
+		 </trim>
+		 group by parent
+	</select>
+	
+	<select id="getShopListEl" resultType="java.util.Map">
+		select shopId,shopName,address,lon,lat from shop 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 省 -->
+			<if test="prvncnm !=null and prvncnm !='' ">
+				AND prvncnm=#{prvncnm}
+			</if>
+			<!-- 区 -->
+			<if test="distnm !=null and distnm !='' ">
+				AND distnm=#{distnm}
+			</if>
+			<!-- 店铺分类 -->
+			<if test="typeShop !=null and typeShop !='' ">
+				AND classify=#{typeShop}
+			</if>
+			<!-- 服务项目 类型判断 -->
+			<if test="serveOpen !=null and serveOpen !='' ">
+				<choose>
+					<when test="serveOpen == 1">
+						AND refEl=1
+					</when>
+					<when test="serveOpen == 2">
+						AND upkeepEl=1
+					</when>
+					<when test="serveOpen == 3">
+						AND tyreEl=1
+					</when>
+					<when test="serveOpen == 4">
+						AND refitEl=1
+					</when>
+					<when test="serveOpen == 5">
+						AND installEl=1
+					</when>
+				</choose>
+			</if>
+		 </trim>
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+	
+	<select id="getShopListElCout" resultType="java.lang.Integer" parameterType="java.util.Map">
+	select count(1) from shop 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 省 -->
+			<if test="prvncnm !=null and prvncnm !='' ">
+				AND prvncnm=#{prvncnm}
+			</if>
+			<!-- 区 -->
+			<if test="distnm !=null and distnm !='' ">
+				AND distnm=#{distnm}
+			</if>
+			<!-- 店铺分类 -->
+			<if test="typeShop !=null and typeShop !='' ">
+				AND classify=#{typeShop}
+			</if>
+			<!-- 服务项目 类型判断 -->
+			<if test="serveOpen !=null and serveOpen !='' ">
+				<choose>
+					<when test="serveOpen == 1">
+						AND refEl=1
+					</when>
+					<when test="serveOpen == 2">
+						AND upkeepEl=1
+					</when>
+					<when test="serveOpen == 3">
+						AND tyreEl=1
+					</when>
+					<when test="serveOpen == 4">
+						AND refitEl=1
+					</when>
+					<when test="serveOpen == 5">
+						AND installEl=1
+					</when>
+				</choose>
+			</if>
+			<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getActi" resultType="java.util.Map">
+		SELECT activityCont FROM `activity` 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="shopId !=null and shopId !=''">
+				and shopId=#{shopId}
+			</if>
+			<if test="shopMold !=null and shopMold !='' ">
+				and shopMold=#{shopMold}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getShopRep" resultType="java.util.Map">
+		SELECT id,shopid,comid,`comment`,createTime FROM `shop_reply`
+		<trim prefix="where" prefixOverrides="and|or">
+			<!-- 店铺编号 -->
+			<if test="shopId !=null and shopId !='' ">
+				and shopid=#{shopId}
+			</if>
+			<!-- 用户价格的价格编号 -->
+			<if test="comid !=null and comid !='' ">
+				and comid=#{comid}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getVehba" resultType="java.util.Map">
+		SELECT vehId,isShow,picAddress FROM `vehbannerpic`
+		<trim prefix="where" prefixOverrides="and|or">
+			<if test="vehId !=null and vehId !='' ">
+				and vehId=#{vehId}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getVeDet" resultType="java.util.Map">
+		SELECT carName,sellPrice FROM `vehicledet`
+		<trim prefix="where" prefixOverrides="and|or">
+			<if test="carName !=null and carName !='' ">
+				and carName=#{carName}
+			</if>
+		</trim>		
+		ORDER BY sellPrice LIMIT 1
+	</select>
+	
+	<insert id="saveShopComments" parameterType="com.sumainfo.common.entity.ShopComment">
+	INSERT INTO shopComment 
+	(cusId,
+	cusName,
+	environmentRate,
+	serviceRate,
+	skillRate, 
+	comment, 
+	createTime,
+	shopId, 
+	classify, 
+	img1, 
+	img2,
+	img3
+	)VALUES
+	(#{cusId},
+	#{cusName},
+	#{environmentRate},
+	#{serviceRate},
+	#{skillRate}, 
+	#{comment}, 
+	#{createTime},
+	#{shopId}, 
+	#{classify}, 
+	#{img1}, 
+	#{img2},
+	#{img3}
+	)
+	</insert>
+	
+	<select id="selectNameByShopId" resultType="java.lang.String">
+	SELECT shopName FROM shop
+	where shopId = #{shopId}
+	</select>
+	
+	<!-- 查询维保信息订单 -->
+	<select id="findRepOrder" resultType="java.util.Map">
+	SELECT
+	a.orderNo,
+	IFNULL(b.shopName, "") AS shopName,
+	IFNULL(b.shopPicAdress, "") AS shopPicAdress,
+	IFNULL(a.orderDate, "") AS orderDate,
+	IFNULL(a.orderTime, "") AS orderTime,
+	IFNULL(b.address, "") AS address,
+	IFNULL(b.lat, 0) AS lat,
+	IFNULL(b.lon, 0) AS lon,
+	IFNULL(b.shopPhone, "") AS shopPhone,
+	c.detCount
+	FROM
+		repordermain a
+	LEFT JOIN shop b ON a.shopId = b.shopId
+	LEFT JOIN (
+		SELECT
+			orderNo,
+			COUNT(*) AS detCount
+		FROM
+			reporderdet
+		GROUP BY
+			orderNo
+	) c ON c.orderNo = a.orderNo
+	WHERE a.cusId = #{cusId} AND a.status = #{status}
+	LIMIT (#{pageNum}/10-1)*10,#{pageNum}
+	</select>
+	
+	<!-- 主分页条数 -->
+	<select id="findRepOrderMainNum" resultType="java.lang.Integer">
+	   	SELECT
+        COUNT(*) AS mainCount
+		FROM
+			repordermain a
+		LEFT JOIN shop b ON a.shopId = b.shopId
+		WHERE a.cusId = #{cusId} AND a.status = #{status}
+	</select>
+	
+	<!-- 明细条数 -->
+	<select id="findRepOrderDetNum" resultType="java.lang.Integer">
+		SELECT
+		COUNT(*) AS detCount
+		FROM
+			reporderdet
+		WHERE
+		orderNo = #{orderNo}
+	</select>
+	
+	<!-- 更新订单状态 -->
+	<update id="updateRepOrderStatus">
+	    UPDATE repordermain SET
+	    status = #{status}
+	    WHERE orderNo = #{orderNo}
+	</update>
+	
+	<!-- 查询订单主表详情信息 -->
+	<select id="findMainOrderDet" resultType="java.util.Map">
+	SELECT
+	a.shopId,
+    a.orderNo,
+	IFNULL(a.cusName, "") AS cusName,
+	IFNULL(a.cusPhone, "") AS cusPhone,
+	IFNULL(a.orderDate, "") AS orderDate,
+	IFNULL(a.orderTime, "") AS orderTime,
+	IFNULL(b.shopPhone, "") AS shopPhone,
+	a.status
+	FROM
+		repordermain a
+	LEFT JOIN shop b on a.shopId = b.shopId
+	WHERE a.orderNo = #{orderNo}
+	</select>
+	
+	<!-- 查询订单附表详情 -->
+	<select id="findDetOrderDet" resultType="java.util.Map">
+	SELECT
+	IFNULL(serviceName, "") AS serviceName,
+	IFNULL(servicPrice, 0) AS servicPrice
+	FROM
+		reporderdet
+	WHERE
+	orderNo = #{orderNo}
+	</select>
+	
+	<!-- 保存预约主表信息 -->
+	<select id="saveShopMainOrder" parameterType="com.sumainfo.common.entity.ShopMainOrders">
+	INSERT INTO repordermain
+	(
+	shopId,
+	orderNo,
+	cusId,
+	cusName,
+	cusPhone,
+	orderDate,
+	orderTime,
+	status,
+	createTime
+	)
+	VALUSE
+	(
+	#{shopId},
+	#{orderNo},
+	#{cusId},
+	#{cusName},
+	#{cusPhone},
+	#{orderDate},
+	#{orderTime},
+	#{status},
+	#{createTime}
+	)
+	</select>
+	
+	<!-- 保存预约明细 -->
+   <insert id="saveShopDetOrder" parameterType="ArrayList">
+       insert into seclvlTable (orderNo,serviceName,servicPrice)
+       values
+       <foreach collection="list" item="item" index="index" separator=",">  
+        (#{item.orderNo},#{item.serviceName},#{item.servicPrice})
+       </foreach>  
+   </insert> 
+   
+   <!-- 重新预约 -->
+   <update id="orderServiceAgain">
+   update repordermain
+   set cusName = #{cusName},
+	   cusPhone = #{cusPhone},
+	   orderDate = #{orderDate},
+	   orderTime = #{orderTime},
+	   createTime = #{createTime},
+	   status = 1
+   where orderNo = #{orderNo}   
+   </update>
+   
+   <select id="getCollectMap" resultType="java.util.Map">
+   		SELECT cusId,associationId,classify,colMold,delfg FROM `collect`
+   		<trim prefix="where" prefixOverrides="and|or">
+   			<if test="cusId !=null">
+   				and cusId=#{cusId}
+   			</if>
+   			<if test="associationId !=null">
+   				and associationId=#{associationId}
+   			</if>
+   			<if test="classify !=null">
+   				and classify=#{classify}
+   			</if>
+   			<if test="delfg !=null">
+   				and delfg=#{delfg}
+   			</if>
+   		</trim>
+   		limit 1
+   </select>
+   
+   <select id="getToken" resultType="java.util.Map">
+		SELECT tokenId,userId,tokenMsg FROM `token`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="token !=null and token !='' ">
+				and tokenMsg=#{token}
+			</if>
+		</trim>
+	</select>
+	
+</mapper>

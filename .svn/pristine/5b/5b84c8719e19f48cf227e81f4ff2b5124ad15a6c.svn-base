@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.VehicleMessageDao">
+
+
+	<insert id="saveVehicleDet" parameterType="com.sumainfo.common.entity.VehicleDet"
+		useGeneratedKeys="true" keyProperty="carId">
+		insert into vehicleDet
+		(
+		carName,
+		sellPrice,
+		orginPrice,
+		carEngine,
+		gearbox,
+		carType,
+		isLicence,
+		shopId,
+		classify
+		)values
+		(
+		#{carName},
+		#{sellPrice},
+		#{orginPrice},
+		#{carEngine},
+		#{gearbox},
+		#{carType},
+		#{isLicence},
+		#{shopId},
+		#{classify}
+		)
+	</insert>
+
+    <!--获取新车最低或最高价格 -->
+	<select id="findNewVehiclePriceRange" resultType="com.sumainfo.common.entity.VehiclePriceRange">
+		SELECT a.carName,MAX(b.sellPrice) AS maxPrice,MIN(b.sellPrice) AS minPrice FROM vehiclemain a
+		       LEFT JOIN vehicledet b ON a.carName = b.carName 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="carName != null and carName !=''">
+				 and a.carName =#{carName}
+			</if>
+			<if test="bandName != null and bandName !=''">
+				and a.bandName =#{bandName}
+			</if>
+		</trim>
+	</select>
+	
+	 <!--获取新车在某4s店的最低或最高价格 -->
+	<select id="find4SVehiclePriceRange" resultType="com.sumainfo.common.entity.VehiclePriceRange">
+		SELECT carName,MAX(sellPrice) AS maxPrice,MIN(sellPrice) AS minPrice FROM vehicledet 
+		where carName =#{carName} and shopId = #{shopId}
+	</select>
+	
+	<!-- 获取二手车最低或最高价格 -->
+	<select id="findUsedVehiclePriceRange" resultType="com.sumainfo.common.entity.VehiclePriceRange">
+	SELECT a.carName,MAX(a.sellPrice) AS maxPrice,MIN(a.sellPrice) As minPrice FROM usedvehicledet a
+	    <trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="carName != null and carName !=''">
+				 and a.carName =#{carName}
+			</if>
+			<if test="bandName != null and bandName !=''">
+				and bandName =#{bandName}
+			</if>
+		</trim>
+	</select>
+
+    <!-- 新车车型综合信息 -->
+	<select id="findVehicleTypeMessage" resultType="java.util.Map">
+	SELECT d.shopId,d.shopName,d.bandName,d.carName,d.picAddress,d.sellPrice,d.counts,d.rate FROM(
+	SELECT e.shopId,e.shopName,e.bandName,e.carName,e.picAddress,e.sellPrice,IFNULL(f.counts,0) AS counts,IFNULL(f.rate,0) AS rate FROM
+	(SELECT a.shopId,a.shopName,a.bandName,a.carName,d.picAddress,b.sellPrice AS sellPrice FROM vehiclemain a
+	LEFT JOIN (SELECT shopId,carName,MIN(sellPrice) AS sellPrice FROM vehicledet GROUP BY shopId,carName)AS b 
+	ON a.shopId = b.shopId AND a.carName = b.carName
+	LEFT JOIN vehiclebanner c 
+	ON a.carName= c.carName AND a.shopId=c.shopId
+	LEFT JOIN vehbannerpic d 
+	ON c.vehId=d.vehId AND d.isShow = 1
+	GROUP BY a.carName,a.shopId) e
+	LEFT JOIN (SELECT s.shopId,COUNT(s.shopId) AS counts,IFNULL(ROUND(AVG((s.environmentRate + s.serviceRate + s.skillRate)/3),1),0) AS rate FROM shopcomment s 
+	WHERE s.classify =1
+	GROUP BY s.shopId) f ON e.shopId = f.shopId
+	) AS d
+	<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="carName != null and carName !=''">
+				 and d.carName =#{carName}
+				 and d.shopId IS NOT NULL
+			</if>
+			<if test="bandName != null and bandName !=''">
+				and d.bandName =#{bandName}
+				and d.shopId IS NOT NULL
+			</if>
+	</trim>		
+	LIMIT #{minPage},#{maxPage}
+	</select>
+	
+	<!-- 获取新车车型综合信息总条数 -->
+	<select id="findVehicleTypeMessageNum" resultType="java.lang.Integer">
+	SELECT count(*) FROM(
+	SELECT e.shopId,e.shopName,e.bandName,e.carName,e.picAddress,e.sellPrice,IFNULL(f.counts,0) AS counts,IFNULL(f.rate,0) AS rate FROM
+	(SELECT a.shopId,a.shopName,a.bandName,a.carName,d.picAddress,b.sellPrice AS sellPrice FROM vehiclemain a
+	LEFT JOIN (SELECT shopId,carName,MIN(sellPrice) AS sellPrice FROM vehicledet GROUP BY shopId,carName)AS b 
+	ON a.shopId = b.shopId AND a.carName = b.carName
+	LEFT JOIN vehiclebanner c 
+	ON a.carName= c.carName AND a.shopId=c.shopId
+	LEFT JOIN vehbannerpic d 
+	ON c.vehId=d.vehId AND d.isShow = 1
+	GROUP BY a.carName,a.shopId) e
+	LEFT JOIN (SELECT s.shopId,COUNT(s.shopId) AS counts,IFNULL(ROUND(AVG((s.environmentRate + s.serviceRate + s.skillRate)/3),1),0) AS rate FROM shopcomment s 
+	WHERE s.classify =1
+	GROUP BY s.shopId) f ON e.shopId = f.shopId
+	) AS d
+	<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="carName != null and carName !=''">
+				 and d.carName =#{carName}
+				 and d.shopId IS NOT NULL
+			</if>
+			<if test="bandName != null and bandName !=''">
+				and d.bandName =#{bandName}
+				and d.shopId IS NOT NULL
+			</if>
+	</trim>		
+	</select>
+
+    <!-- 二手车信息 -->
+	<select id="findUsedVehicleMessage" resultType="java.util.Map">
+		SELECT
+			u.uId,
+		    u.carName,
+			u.shopId,
+			u.sellPrice,
+			p.picAddress
+		FROM
+			usedvehicledet u
+		LEFT JOIN picturesave p ON u.uId = p.associationId
+		AND p.classify = 2
+		AND p.slideshow = 2
+	   <trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="carName != null and carName !=''">
+				 and  u.carName =#{carName}
+			</if>
+			<if test="bandName != null and bandName !=''">
+				and  u.bandName =#{bandName}
+			</if>
+	    </trim>		
+<!--  		GROUP BY
+			a.carName,
+			a.shopId-->
+	    LIMIT #{minPage},#{maxPage}		
+	</select>
+	
+	<!-- 二手车信息总条数 -->
+	<select id="findUsedVehicleMessageNum" resultType="java.lang.Integer">
+		SELECT
+			count(*)
+		FROM
+			usedvehicledet u
+		LEFT JOIN picturesave p ON u.uId = p.associationId
+		AND p.classify = 2
+		AND p.slideshow = 2
+	   <trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="carName != null and carName !=''">
+				 and  u.carName =#{carName}
+			</if>
+			<if test="bandName != null and bandName !=''">
+				and  u.bandName =#{bandName}
+			</if>
+	    </trim>		
+	</select>
+	
+    <!-- 查询轮播图 -->
+	<select id="findVehicleBanner" resultType="java.util.Map">
+		SELECT a.carName,b.picAddress FROM vehiclebanner AS a
+		LEFT JOIN
+		vehbannerpic AS b ON a.vehId = b.vehId
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="shopId != null and shopId !=''">
+				and a.shopId = #{shopId}
+				and a.carName = #{carName}
+			</if>
+			<if test="shopId == null or shopId ==''">
+				and a.carName = #{carName} 
+				and a.classify = 0
+			</if>
+		</trim>
+	</select>
+	
+	<!-- 新车信息 -->
+	<select id="findVehicleDet" resultType="java.util.Map">
+	SELECT
+	shopId,
+	carId,
+	carDetName,
+	sellPrice,
+	carEngine,
+	gearbox,
+	classify,
+	carType
+	FROM 
+	vehicledet 
+    WHERE carName = #{carName} AND shopId = #{shopId}
+   LIMIT #{minPage},#{maxPage}
+	</select>
+	
+	<!-- 新车信息总条数 -->
+	<select id="findVehicleDetNum" resultType="java.lang.Integer">
+	SELECT
+    count(*)
+	FROM 
+	vehicledet 
+    WHERE carName = #{carName} AND shopId = #{shopId}
+	</select>
+	
+	<select id="findVehicleMain" resultType="java.util.Map">
+	SELECT 
+	carName,
+	rank,
+	gearbox,
+	carType,
+	gearbox,
+	carEngine,
+	uqId,
+	shopId,
+	shopName
+	FROM 
+	vehiclemain 
+    WHERE carName = #{carName} AND shopId = #{shopId}
+	</select>
+	
+	
+<select id="findUsedVehicleDet" resultType="java.util.Map">
+	SELECT 
+        CONCAT_WS("-",a.bandName,a.carName) AS vehicleName,
+        a.carDetName,
+        a.gearbox,
+		a.carEngine,
+		a.sellPrice,
+		a.isCompany,
+		a.isShort,
+		DATE_FORMAT(a.licenceTime,'%Y%m%d') AS licenceTime,
+		a.mileage,
+		a.carLocation,
+		a.produce,
+		a.shopName,
+		a.shopId,
+		a.classify,
+		a.uId
+    FROM usedvehicledet a
+	WHERE
+		a.uId = #{uId}
+</select>
+
+<select id="findUsedVehicleBannner" resultType="java.util.Map">
+	SELECT
+		p.picAddress
+	FROM
+		picturesave p
+	WHERE
+		p.slideshow = 1
+	AND p.associationId = #{uId}
+</select>
+
+<!-- 车辆收藏 -->
+<insert id="updateCollectStatus" keyProperty="colId" parameterType="com.sumainfo.common.entity.CollectVehicle" useGeneratedKeys="true">
+	    <!-- 查看是否存在cellPhone,如果存在及更新，否则插入 -->
+	    <selectKey keyProperty="count" order="BEFORE" resultType="int">  
+	        select count(*) as count from collect where cusId = ${cusId} and associationId = #{associationId}
+	    </selectKey>        
+	    <!-- 如果大于0则更新 -->  
+	    <if test="count>0">  
+	        UPDATE collect SET
+	         cusId = #{cusId},
+	         associationId = #{associationId},
+	         classify = #{classify},
+	         colMold = #{colMold}
+	        WHERE cusId = ${cusId} and associationId = #{associationId}
+	    </if>
+	    <!-- 如果等于0则保存 -->  
+	    <if test="count==0">
+	      INSERT INTO 
+				collect (cusId,associationId,classify,colMold) 
+		  VALUES 
+				(#{cusId},#{associationId},#{classify},#{colMold})  
+	    </if>
+    </insert>
+    
+    <select id="findCollectStatus" resultType="java.lang.Integer">
+    SELECT colMold FROM collect  WHERE cusId = #{cusId} and associationId = #{associationId} 
+    </select>
+    
+    <!--获取自己收藏的车辆信息 -->
+    <select id="findMyCollect4sVehicle" resultType="com.sumainfo.common.entity.CollectMessage">
+    SELECT f.vehicleName,f.carName,f.shopId,f.shopName,f.address,f.picAddress,h.maxPrice,h.minPrice,f.shopPicAdress,f.lat,f.lon FROM
+	(SELECT CONCAT_WS("-",b.bandName,b.carName) AS vehicleName,b.carName,b.shopId,b.shopName,e.address,d.picAddress,e.shopPicAdress,e.lat,e.lon FROM collect a
+	LEFT JOIN vehiclemain b ON a.associationId = b.uqId
+	LEFT JOIN vehiclebanner c ON b.shopId = c.shopId AND b.carName = c.carName AND c.classify =1
+	LEFT JOIN vehbannerpic d ON c.vehId = d.vehId AND d.isShow = 1
+	LEFT JOIN shop e ON b.shopId = e.shopId
+	WHERE a.classify = 4 AND a.colMold=0 AND a.cusId =#{cusId}) f
+	LEFT JOIN 
+	(SELECT a.shopId,a.carName,MAX(b.sellPrice) AS maxPrice,MIN(b.sellPrice) AS minPrice FROM vehiclemain a
+	LEFT JOIN vehicledet b ON a.carName = b.carName GROUP BY a.carName,a.shopId) h
+	ON f.shopId = h.shopId AND f.carName = h.carName
+	LIMIT #{minPage},#{maxPage}
+    </select>
+    
+    <!-- 获取自己收藏的车辆信息条数 -->
+    <select id="findMyCollect4sVehicleNum" resultType="java.lang.Integer">
+    SELECT COUNT(*) AS counts FROM
+	(SELECT CONCAT_WS("-",b.bandName,b.carName) AS vehicleName,b.carName,b.shopId,b.shopName,e.address,d.picAddress,e.shopPicAdress,e.lat,e.lon FROM collect a
+	LEFT JOIN vehiclemain b ON a.associationId = b.uqId
+	LEFT JOIN vehiclebanner c ON b.shopId = c.shopId AND b.carName = c.carName AND c.classify =1
+	LEFT JOIN vehbannerpic d ON c.vehId = d.vehId AND d.isShow = 1
+	LEFT JOIN shop e ON b.shopId = e.shopId
+	WHERE a.classify = 4 AND a.colMold=0 AND a.cusId =#{cusId}) f
+	LEFT JOIN 
+	(SELECT a.shopId,a.carName,MAX(b.sellPrice) AS maxPrice,MIN(b.sellPrice) AS minPrice FROM vehiclemain a
+	LEFT JOIN vehicledet b ON a.carName = b.carName GROUP BY a.carName,a.shopId) h
+	ON f.shopId = h.shopId AND f.carName = h.carName
+    </select>
+</mapper>

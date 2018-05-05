@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.ShopMapper">
+
+	<select id="getShopcomment" resultType="java.util.Map">
+		SELECT 
+		COUNT(*) AS count,
+		ROUND(AVG((environmentRate+serviceRate+skillRate)/3),1) AS rate
+		FROM shopComment
+		<where>
+			<if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+			<if test="shopCommentType !=null and shopCommentType !='' ">
+				AND classify=#{shopCommentType}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getPicturesave" resultType="java.util.Map">
+		SELECT picAddress FROM `picturesave`
+		<where>
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND associationId=#{shopId}
+			</if>
+			<!-- 图片分类 -->
+			<if test="picturesaveType !=null and picturesaveType !='' ">
+				AND classify=#{picturesaveType}
+			</if>
+			<!-- 是否是轮播图，取轮播图第一张 -->
+			<if test="slideshow !=null and slideshow !='' ">
+				AND slideshow=#{slideshow}
+			</if>
+		</where>
+		LIMIT 1
+	</select>
+	
+	<select id="getShopList" resultType="java.util.Map">
+		SELECT s.shopId,s.shopName,s.address,group_concat(d.serveMold)serveMold from shop s 
+		LEFT JOIN dedicatedservice d on s.shopId=d.shopId GROUP BY s.shopId,s.shopName,s.address
+	</select>
+
+</mapper>

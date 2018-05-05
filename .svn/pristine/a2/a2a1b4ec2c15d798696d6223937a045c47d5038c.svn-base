@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.VehicleOrdersDao">
+
+	<select id="findVehicleOrderMessage" resultType="com.sumainfo.common.entity.VehicleOrders">
+	    SELECT
+	    id,
+	    carName,
+	    carDetail,
+	    carPicUrl,
+	    orderTime,
+	    cusId,
+	    cusName,
+	    carSite,
+	    status,
+	    contactPhone 
+	    FROM vehicleOrders 
+	    WHERE cusId = ${cusId} AND status = #{status}
+	    ORDER BY orderTime DESC
+	</select>
+
+	<insert id="saveVehicleOrder" parameterType="com.sumainfo.common.entity.VehicleOrders">
+	INSERT INTO vehicleOrders
+	    (orderDate, 
+	     orderTime, 
+	     cusId, 
+	     status, 
+	     orderCode, 
+	     viewerName, 
+	     viewerPhone, 
+	     shopId,
+	     carName,
+	     carDetName, 
+	     keyId, 
+	     classify, 
+	     createTime,
+	     uid) 
+		VALUES 
+		(#{orderDate},
+		 #{orderTime},
+		 #{cusId},
+		 #{status},
+		 #{orderCode},
+		 #{viewerName},
+		 #{viewerPhone},
+		 #{shopId},
+		 #{carName},
+		 #{carDetName},
+		 #{keyId},
+		 #{classify},
+		 #{createTime},
+		 #{uid})
+	</insert>
+
+<insert id="saveSmsBackMessage" parameterType="java.util.List">  
+    INSERT INTO smsreturn (moTime,spCode,mobile,destCode,messageContent)  
+    VALUES  
+    <foreach collection="list" item="items" index="index" separator=",">  
+            (#{items.moTime},#{items.spCode},#{items.mobile},#{items.destCode},#{items.messageContent})  
+    </foreach> 
+  </insert> 
+  
+  <select id="findOrderVehicles" resultType="java.util.Map">
+	SELECT
+	m.shopId,
+	m.viewerPhone,
+	m.cusId,
+	m.picAddress,
+	m.carName,
+	m.carDetName,
+	m.orderDate,
+	m.orderTime,
+	m.contactName,
+	m.contactPhone,
+	m. STATUS,
+	m.address,
+	m.classify
+FROM
+	(
+		(
+			SELECT
+				a.shopId,
+				a.viewerPhone,
+				a.cusId,
+				e.picAddress AS picAddress,
+				a.carName,
+				a.carDetName,
+				a.orderDate,
+				a.orderTime,
+				a.contactName,
+				a.contactPhone,
+				a. STATUS,
+				f.address AS address,
+				a.classify
+			FROM
+				(
+					SELECT
+						s.uname AS contactName,
+						s.mobile AS contactPhone,
+						v.*
+					FROM
+						vehicleorders v
+					INNER JOIN sys_user s ON v.uid = s.user_id
+				) a
+			LEFT JOIN vehicledet b ON CAST(a.keyId AS SIGNED) = b.carId
+			AND a.shopId = b.shopId
+			LEFT JOIN shop f ON a.shopId = f.shopId
+			LEFT JOIN vehiclebanner d ON b.carName = d.carName
+			AND b.shopId = d.shopId
+			LEFT JOIN vehbannerpic e ON d.vehId = e.vehId
+			AND e.isShow = 1
+			WHERE
+				a.classify = 2
+		)
+		UNION
+			(
+				SELECT
+					a.shopId,
+					a.viewerPhone,
+					a.cusId,
+					d.picAddress AS picAddress,
+					a.carName,
+					a.carDetName,
+					a.orderDate,
+					a.orderTime,
+					a.contactName,
+					a.contactPhone,
+					a. STATUS,
+					c.address,
+					a.classify AS address
+				FROM
+					(
+						SELECT
+							u.uname AS contactName,
+							u.mobile AS contactPhone,
+							l.*
+						FROM
+							vehicleorders l
+						INNER JOIN sys_user u ON l.uid = u.user_id
+					) a
+				LEFT JOIN usedvehicledet b ON a.shopId = b.shopId
+				AND a.keyId = b.uId
+				LEFT JOIN shop c ON a.shopId = c.shopId
+				LEFT JOIN picturesave d ON b.uId = d.associationId
+				AND d.slideshow = 2
+				WHERE
+					a.classify = 1
+			)
+	) m
+	<trim prefix="WHERE" prefixOverrides="AND|OR">
+		<if test="states == null">
+		     and m.cusId = #{cusId}
+			 and m.viewerPhone = #{viewerPhone}
+			 and m.status = #{status}
+		</if>
+		<if test="states != null">
+		    and m.cusId = #{cusId}
+			and m.viewerPhone != #{viewerPhone}
+			and m.status = #{status}
+		</if>
+	</trim>
+  </select>
+  
+  <select id="findOrderVehiclesNum" resultType="java.lang.Integer">
+SELECT
+	count(*) AS count
+FROM
+	(
+		(
+			SELECT
+				a.shopId,
+				a.viewerPhone,
+				a.cusId,
+				e.picAddress AS picAddress,
+				a.carName,
+				a.carDetName,
+				a.orderDate,
+				a.orderTime,
+				a.contactName,
+				a.contactPhone,
+				a. STATUS,
+				f.address AS address,
+				a.classify
+			FROM
+				(
+					SELECT
+						s.uname AS contactName,
+						s.mobile AS contactPhone,
+						v.*
+					FROM
+						vehicleorders v
+					INNER JOIN sys_user s ON v.uid = s.user_id
+				) a
+			LEFT JOIN vehicledet b ON CAST(a.keyId AS SIGNED) = b.carId
+			AND a.shopId = b.shopId
+			LEFT JOIN shop f ON a.shopId = f.shopId
+			LEFT JOIN vehiclebanner d ON b.carName = d.carName
+			AND b.shopId = d.shopId
+			LEFT JOIN vehbannerpic e ON d.vehId = e.vehId
+			AND e.isShow = 1
+			WHERE
+				a.classify = 2
+		)
+		UNION
+			(
+				SELECT
+					a.shopId,
+					a.viewerPhone,
+					a.cusId,
+					d.picAddress AS picAddress,
+					a.carName,
+					a.carDetName,
+					a.orderDate,
+					a.orderTime,
+					a.contactName,
+					a.contactPhone,
+					a. STATUS,
+					c.address AS address,
+					a.classify
+				FROM
+					(
+						SELECT
+							u.uname AS contactName,
+							u.mobile AS contactPhone,
+							l.*
+						FROM
+							vehicleorders l
+						INNER JOIN sys_user u ON l.uid = u.user_id
+					) a
+				LEFT JOIN usedvehicledet b ON a.shopId = b.shopId
+				AND a.keyId = b.uId
+				LEFT JOIN shop c ON a.shopId = c.shopId
+				LEFT JOIN picturesave d ON b.uId = d.associationId
+				AND d.slideshow = 2
+				WHERE
+					a.classify = 1
+			)
+	) m
+	<trim prefix="WHERE" prefixOverrides="AND|OR">
+		<if test="states == null">
+		     and m.cusId = #{cusId}
+			 and m.viewerPhone = #{viewerPhone}
+			 and m.status = #{status}
+		</if>
+		<if test="states != null">
+		    and m.cusId = #{cusId}
+			and m.viewerPhone != #{viewerPhone}
+			and m.status = #{status}
+		</if>
+	</trim>
+  </select>
+  
+  <select id="findContactMs" resultType="com.sumainfo.common.entity.ContactUserMs">
+  SELECT 
+  a.user_id as uid,
+  a.portait AS contactPhoto,
+  a.uname AS contactName,
+  a.mobile AS contactPhone 
+  FROM 
+  sys_user a
+  left join sys_role_dept b on a.dept_id = b.dept_id
+  WHERE a.status = 1 AND b.role_id = 5 AND a.shopid = #{shopid}
+  </select>
+</mapper>

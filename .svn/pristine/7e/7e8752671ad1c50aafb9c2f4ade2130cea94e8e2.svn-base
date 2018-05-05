@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.ComplaintManagementDao">
+	
+	<select id="getToken" resultType="java.util.Map">
+		SELECT tokenId,userId,tokenMsg FROM `token`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="tokenMsg !=null and tokenMsg !='' ">
+				and tokenMsg=#{tokenMsg}
+			</if>
+		</trim>
+	</select>
+
+	<select id="getShopList" resultType="java.util.Map">
+		SELECT s.shopId,s.shopName,s.address,group_concat(d.serveMold)serveMold from shop s 
+		LEFT JOIN (select relevanceId,serveMold from dedicatedservice 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 关联类型 -->
+		    <if test="typeShop !=null and typeShop !='' ">
+				AND relevanceMold=#{typeShop}
+			</if>
+		</trim>
+		) d on s.shopId=d.relevanceId 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺类型 -->
+		    <if test="typeShop !=null and typeShop !='' ">
+				AND s.classify=#{typeShop}
+			</if>
+			<!-- 店铺编号 -->
+		    <if test="shopId !=null and shopId !='' ">
+				AND s.shopId=#{shopId}
+			</if>
+		</trim>
+		GROUP BY s.shopId,s.shopName,s.address
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+
+	<select id="getShopListEl" resultType="java.util.Map">
+		select shopId,shopName,address,lon,lat from shop 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<!-- 店铺分类 -->
+			<if test="typeShop !=null and typeShop !='' ">
+				AND classify=#{typeShop}
+			</if>
+			<!-- 店铺编号 -->
+			<if test="shopId !=null and shopId !='' ">
+				AND shopId=#{shopId}
+			</if>
+		 </trim>
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+
+    <!-- 保存客户投诉信息表 -->
+	<insert id="saveComplaintMessage" parameterType="com.sumainfo.common.entity.ComplaintManagement"
+		useGeneratedKeys="true" keyProperty="id">
+		<!-- <selectKey resultType="java.lang.Integer" order="AFTER" keyProperty="id"> 
+			SELECT LAST_INSERT_ID() AS id </selectKey> -->
+		insert into complainTable
+		(
+		cusId,
+		cusName,
+		shopId,
+		shopName,
+		complaintType,
+		happenedTime,
+		dealSchedule,
+		reasons,
+		createTime
+		)values
+		(
+		#{cusId},
+		#{cusName},
+		#{shopId},
+		#{shopName},
+		#{complaintType},
+		#{happenedTime},
+		#{dealSchedule},
+		#{reasons},
+		#{createTime}
+		)
+	</insert>
+
+    <!-- 查询客户自己投诉的list -->
+    <select id="findComplaintList" resultType="java.util.Map">
+    SELECT 
+	    id,
+	    shopId,
+	    shopName,
+	    complaintType,
+	    dealSchedule
+    FROM  complainTable
+    WHERE cusId = #{cusId}
+    GROUP BY createTime DESC
+    LIMIT 0,#{pageNum}
+    </select>
+    
+    <!-- 查询某一条投诉信息 -->
+    <select id="findComplaintMain" resultType="com.sumainfo.common.entity.ComplaintMs">
+     SELECT 
+	    id,
+	    shopId,
+	    shopName,
+	    complaintType,
+	    dealSchedule,
+	    reasons,
+	    isRecept,
+	    date_format(overTime,'%Y年%m月%d日') AS overTime,
+	    date_format(createTime,'%Y年%m月%d日') AS createTime 
+	FROM  complainTable
+    WHERE id = #{id} AND cusId = #{cusId}
+    </select>
+    
+    <!-- 查询投诉的照片 -->
+    <select id="findMyComplaintPic" resultType="java.lang.String">
+    SELECT
+		picAddress
+	FROM
+		picturesave
+	WHERE
+	classify = 3 AND associationId = #{associationId}
+    </select>
+    
+    <!-- 查询回复信息 -->
+    <select id="findMyReply" resultType="java.util.Map">
+    SELECT
+		comtent,
+		classify,
+		date_format(createTime,'%Y年%m月%d日') AS createTime,
+		IFNULL(pic1,"") AS pic1,
+		IFNULL(pic2,"") AS pic2,
+		IFNULL(pic3,"") AS pic3
+	FROM
+		complainreply
+	WHERE
+		parentId = #{parentId}
+	GROUP BY
+		createTime ASC
+    </select>
+    
+    <!-- 查询客户自己投诉的listNum -->
+    <select id="findComplaintListNum" resultType="java.lang.Integer">
+    SELECT 
+    count(*) AS counts
+    FROM  complainTable
+    WHERE cusId = #{cusId}
+    </select>
+    
+    <!-- 删除投诉信息 -->
+	<delete id="deleteComplaintMessage">
+		delete from complainTable where id = #{results}
+	</delete>
+	
+	<insert id="saveReply" parameterType="com.sumainfo.common.entity.complaintReply">
+	INSERT INTO complainreply
+	(
+	classify,
+	parentId,
+	comtent,
+	creatorId,
+	createTime,
+	pic1,
+	pic2,
+	pic3
+	)VALUES
+	(
+	#{classify},
+	#{parentId},
+	#{comtent},
+	#{creatorId},
+	#{createTime},
+	#{pic1},
+	#{pic2},
+	#{pic3}
+	)
+	</insert>
+	
+	<update id="overCom">
+	update complainTable
+	set isRecept = #{isRecept},
+	    overTime = #{overTime},
+	    dealSchedule = 3
+	where id = ${id}    
+	</update>
+
+	<select id="getCustomer" resultType="java.util.Map">
+		SELECT cusId,date_format(createTime, '%Y-%m-%d') AS createTime FROM `shopcomment`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="cusId !=null and cusId !='' ">
+				and cusId=#{cusId}
+			</if>
+			<if test="classify !=null and classify !='' ">
+				and classify=#{classify}
+			</if>
+		</trim>
+		GROUP BY date_format(createTime, '%Y-%m-%d') ORDER BY createTime desc
+		<if test="start != null and limit != '' ">
+				limit #{start},#{limit}
+		</if>
+	</select>
+	
+	<select id="getCustomerCont" resultType="java.util.Map">
+	SELECT count(1) FROM `shopcomment` 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="cusId !=null and cusId !='' ">
+				and cusId=#{cusId}
+			</if>
+			<if test="classify !=null and classify !='' ">
+				and classify=#{classify}
+			</if>
+		</trim>
+		GROUP BY date_format(createTime, '%Y-%m-%d') ORDER BY createTime desc
+	</select>
+
+	<select id="getShopComment" resultType="java.util.Map">
+	SELECT s.id as comid,s.cusId,s.cusName,s.environmentRate,s.serviceRate,s.skillRate, 
+	s.`comment`,s.createTime,s.shopId,s.classify,s.imgs,c.portait,c.sex 
+	FROM (select id,cusId,cusName,environmentRate,serviceRate,skillRate,`comment`,
+	createTime,shopId,classify,CONCAT(ifnull(img1,''), ";",ifnull(img2,''),";",ifnull(img3,''),";",ifnull(img4,''),";",ifnull(img5,'')) 
+	as imgs from shopcomment)s left join customer c on s.cusId=c.cusId
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="cusId !=null and cusId !='' ">
+				and s.cusId=#{cusId}
+			</if>
+			<if test="createTime !=null">
+				and date_format(s.createTime, '%Y-%m-%d')=#{createTime}
+			</if>
+			<if test="classify !=null and classify!=''">
+				and s.classify=#{classify}
+			</if>
+		</trim>
+		ORDER BY createTime desc
+	</select>
+
+	<select id="getColletList" resultType="java.util.Map">
+		SELECT cusId,associationId,colMold FROM `collect`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="cusId !=null and cusId !='' ">
+				and cusId=#{cusId}
+			</if>
+			<if test="colMold !=null and colMold !='' ">
+				and colMold=#{colMold}
+			</if>
+			<if test="CollctCla !=null and CollctCla !='' ">
+				and classify=#{CollctCla}
+			</if>
+		</trim>
+		<if test="start !=null and limit !='' ">
+			limit #{start},#{limit}
+		</if>
+	</select>
+	
+	<select id="getColletListCout" resultType="java.lang.Integer" parameterType="java.util.Map">
+	SELECT count(1) FROM `collect`
+		<trim prefix="where" prefixOverrides="AND|OR">
+			<if test="cusId !=null and cusId !='' ">
+				and cusId=#{cusId}
+			</if>
+			<if test="colMold !=null and colMold !='' ">
+				and colMold=#{colMold}
+			</if>
+			<if test="CollctCla !=null and CollctCla !='' ">
+				and classify=#{CollctCla}
+			</if>
+		</trim>
+	</select>
+
+	<select id="getClientEva" resultType="java.util.Map">
+		SELECT
+		cusId,cusName,environmentRate,serviceRate,skillRate,`comment`,createTime,shopId,classify
+		FROM `shopcomment`
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="cusId !=null and cusId !='' ">
+				and cusId=#{cusId}
+			</if>
+		</trim>
+	</select>
+
+	<select id="Shop" resultType="java.util.Map">
+	SELECT shopId,shopName from shop
+		<trim prefix="where" prefixOverrides="and|or">
+			<if test="shopId !=null and shopId != ''">
+				and shopId=#{shopId}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getShopRep" resultType="java.util.Map">
+		SELECT id,shopid,comid,`comment`,createTime FROM `shop_reply`
+		<trim prefix="where" prefixOverrides="and|or">
+			<!-- 店铺编号 -->
+			<if test="shopId !=null and shopId !='' ">
+				and shopid=#{shopId}
+			</if>
+			<!-- 用户价格的价格编号 -->
+			<if test="comid !=null and comid !='' ">
+				and comid=#{comid}
+			</if>
+		</trim>
+	</select>
+</mapper>

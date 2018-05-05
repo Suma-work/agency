@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.PalaceNameDao">
+
+ <insert id="saveAreaList" parameterType="ArrayList">  
+    INSERT INTO areaTable (areaId,areaName,parentName,zipCode,areaCode)  
+    VALUES  
+    <foreach collection="list" item="item" index="index" separator=",">  
+            (#{item.areaId}, #{item.areaName},#{item.parentName},#{item.zipCode},#{item.areaCode})  
+    </foreach> 
+  </insert> 
+  
+<select id="findArea" resultType="com.sumainfo.common.entity.AreaTable">
+  select areaId,areaName,parentName,zipCode,areaCode from areaTable
+  <where>
+ <if test="parentName == null">
+ areaCode=2
+ </if>
+ <if test="parentName != null">
+ parentName = #{parentName}
+ </if>
+ </where>
+  </select>
+</mapper>

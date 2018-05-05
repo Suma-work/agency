@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sumainfo.agency.dao.SellNewVehicleDao">
+
+<insert id="saveVehicleMessage" parameterType="com.sumainfo.common.entity.NewVehicleSells" keyProperty="id">
+insert into newVehicleSells
+(cusId,
+cusName,
+cusPhone,
+cusIdentityCard,
+carBrand,
+carType,
+carRecver,
+amounts,
+remark,
+referrer,
+referrerPhone,
+referrerIdentityCard,
+createTime
+)values
+(#{cusId},
+#{cusName},
+#{cusPhone},
+#{cusIdentityCard},
+#{carBrand},
+#{carType},
+#{carRecver},
+#{amounts},
+#{remark},
+#{referrer},
+#{referrerPhone},
+#{referrerIdentityCard},
+#{createTime}
+)
+</insert>
+
+
+
+</mapper>
